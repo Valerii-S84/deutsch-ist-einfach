@@ -160,12 +160,12 @@ export async function saveContactRequest(
 }
 
 // Site-owned administrative access; never reads Quiz Arena storage.
-export async function readSiteContactRequests(page: number) {
+export async function readSiteContactRequests(page: number, testsOnly = false) {
   const sql = getDatabaseClient();
   return sql.begin("isolation level repeatable read read only", async transaction => {
-    const totals = await transaction`SELECT count(*)::int AS total FROM contact_requests`;
-    const items = await transaction`SELECT id::text, type, status, name, contact, payload, created_at, updated_at
-      FROM contact_requests ORDER BY created_at DESC, id DESC LIMIT 20 OFFSET ${(page - 1) * 20}`;
+    const totals = await transaction`SELECT count(*)::int AS total FROM contact_requests WHERE is_test = ${testsOnly}`;
+    const items = await transaction`SELECT id::text, type, status, name, contact, payload, created_at, updated_at, is_test
+      FROM contact_requests WHERE is_test = ${testsOnly} ORDER BY created_at DESC, id DESC LIMIT 20 OFFSET ${(page - 1) * 20}`;
     return { items: [...items], total: totals[0].total as number, page, pages: Math.max(1, Math.ceil(totals[0].total / 20)) };
   });
 }

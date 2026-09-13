@@ -20,9 +20,15 @@ export function usePublicAnalytics() { return useContext(AnalyticsContext); }
 function readConsent(key: string): AnalyticsConsent {
   try {
     const value = localStorage.getItem(key);
-    return value === "granted" || value === "denied" ? value : "pending";
-  } catch { return "pending"; }
+    if (value === "granted" || value === "denied") return value;
+    if (key === WEBSITE_CONSENT_STORAGE_KEY) {
+      return localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) === "denied" ? "denied" : "automatic";
+    }
+    return "pending";
+  } catch { return key === WEBSITE_CONSENT_STORAGE_KEY ? "denied" : "pending"; }
 }
+
+const collecting = (value: AnalyticsConsent) => value === "automatic" || value === "granted";
 
 export function AnalyticsProvider({ children, mode = getAnalyticsMode() }: { children: ReactNode; mode?: AnalyticsMode }) {
   const pathname = usePathname();
@@ -37,7 +43,7 @@ export function AnalyticsProvider({ children, mode = getAnalyticsMode() }: { chi
   const lastLegacyPath = useRef<string | null>(null);
 
   const applyConsent = useCallback((value: AnalyticsConsent) => {
-    if (value !== "granted") {
+    if (!collecting(value)) {
       tracker.current?.stop(); tracker.current = null;
       clearAnalyticsIdentity();
       try { localStorage.removeItem(PUBLIC_VISITOR_ID_STORAGE_KEY); } catch {}
@@ -81,15 +87,18 @@ export function AnalyticsProvider({ children, mode = getAnalyticsMode() }: { chi
   }, [key, applyConsent]);
 
   useEffect(() => {
-    if (!loaded || !publicScope || consent !== "granted" || mode !== "new") return;
-    const runtime = new WebsiteAnalytics(() => current.current === "granted" && readConsent(key) === "granted" && !window.location.pathname.startsWith("/admin"));
+    if (!loaded || !publicScope || !collecting(consent) || mode !== "new") return;
+    const runtime = new WebsiteAnalytics(
+      () => collecting(current.current) && collecting(readConsent(key)) && !window.location.pathname.startsWith("/admin"),
+      () => current.current === "granted" ? "granted" : "automatic",
+    );
     tracker.current = runtime;
     runtime.start();
     return () => { runtime.stop(); if (tracker.current === runtime) tracker.current = null; };
   }, [loaded, publicScope, consent, mode, key]);
 
   useEffect(() => {
-    if (!publicScope || !loaded || consent !== "granted" || !pathname) return;
+    if (!publicScope || !loaded || !collecting(consent) || !pathname) return;
     if (mode === "new") tracker.current?.navigate(pathname);
     if (mode === "legacy" && lastLegacyPath.current !== pathname && readConsent(key) === "granted") {
       lastLegacyPath.current = pathname;
@@ -98,13 +107,13 @@ export function AnalyticsProvider({ children, mode = getAnalyticsMode() }: { chi
   }, [pathname, publicScope, loaded, consent, mode, key]);
 
   const trackEvent = useCallback((name: PublicAnalyticsEventName, payload: PublicAnalyticsPayload = {}) => {
-    if (!publicScope || current.current !== "granted" || readConsent(key) !== "granted") return;
+    if (!publicScope || !collecting(current.current) || !collecting(readConsent(key))) return;
     if (mode === "new") tracker.current?.track(name, payload);
     const click = telegramClick(name, payload);
     if (mode === "legacy" && click) sendWebsiteAnalyticsEvent({ eventType: "telegram_cta_click", metadata: { public_event_name: name, section: click.placement, cta: click.element_id, destination: click.destination } });
   }, [publicScope, mode, key]);
   const prepareFormSubmission = useCallback(async (form: AnalyticsFormId) => {
-    if (mode !== "new" || !publicScope || current.current !== "granted" || readConsent(key) !== "granted") return;
+    if (mode !== "new" || !publicScope || !collecting(current.current) || !collecting(readConsent(key))) return;
     return tracker.current?.prepareFormSubmission(form);
   }, [mode, publicScope, key]);
   const value = useMemo(() => ({ consent, requestConsent, trackEvent, prepareFormSubmission, openSettings: () => setSettings(true) }), [consent, requestConsent, trackEvent, prepareFormSubmission]);
@@ -116,7 +125,7 @@ export function AnalyticsProvider({ children, mode = getAnalyticsMode() }: { chi
       role="dialog" aria-live="polite" aria-label="Datenschutz und Analytics-Einwilligung"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-slate-800">Nur mit deiner Einwilligung messen wir Seitenaufrufe, wichtige Klicks, ungefähre aktive Zeit sowie Quiz- und Anfrageergebnisse, ohne Formularinhalte. Du kannst deine Entscheidung hier jederzeit ändern. <a href="/privacy" className="underline">Datenschutz</a></p>
+        <p className="text-sm text-slate-800">{mode === "new" ? "Website-Analytics ist standardmäßig aktiv. Du kannst die Erfassung hier deaktivieren. " : "Analytics wird nach deiner Zustimmung aktiviert. "}Wir messen Seitenaufrufe, wichtige Klicks, ungefähre aktive Zeit sowie Quiz- und Anfrageergebnisse, ohne Formularinhalte. <a href="/privacy" className="underline">Datenschutz</a></p>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => requestConsent(true)} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">Analytics erlauben</button>
           <button type="button" onClick={() => requestConsent(false)} className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold">{consent === "granted" ? "Einwilligung widerrufen" : "Analytics ablehnen"}</button>

@@ -1,0 +1,137 @@
+name: quiz-arena-site
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:?Set an immutable site image}
+    restart: unless-stopped
+    env_file: /opt/quiz-arena-site/.env.site
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://site_user:${SITE_DB_PASSWORD:?Required}@site-db:5432/deutschmit_site
+      SITE_ADMIN_EMAIL: ${SITE_ADMIN_EMAIL:?Required}
+      SITE_ADMIN_PASSWORD: ${SITE_ADMIN_PASSWORD:?Required}
+      SITE_ADMIN_SESSION_SECRET: ${SITE_ADMIN_SESSION_SECRET:?Required}
+      QUIZ_ARENA_ADMIN_URL: https://deutchquizarena.de/api
+      # Public homepage counters use the existing Quiz Arena lifetime totals.
+      API_INTERNAL_URL: http://api:8000
+      SITE_LEGACY_ANALYTICS_SOURCE: quiz-arena
+      ANALYTICS_SERVICE_URL: http://analytics:3100
+      ANALYTICS_SERVICE_KEY: ${ANALYTICS_SERVICE_KEY:?Required}
+      ANALYTICS_TRUST_PROXY: "1"
+    networks:
+      site_edge:
+        aliases: [site-frontend]
+      quiz_edge:
+      site_storage:
+      analytics_http:
+    depends_on:
+      site-migrate:
+        condition: service_completed_successfully
+      analytics:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/admin/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      retries: 24
+      start_period: 15s
+    mem_limit: 768m
+  legacy-frontend:
+    image: ghcr.io/valerii-s84/quiz-arena-frontend@sha256:917b57a98f21144563dced3428e40571b5d580d1bbefe504b05e3e4d03834545
+    restart: unless-stopped
+    env_file: /opt/quiz-arena-site/.env.site
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: /api
+      API_INTERNAL_URL: http://api:8000
+    networks:
+      site_edge:
+        aliases: [site-legacy]
+      quiz_edge:
+    mem_limit: 512m
+  site-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: site_user
+      POSTGRES_DB: deutschmit_site
+      POSTGRES_PASSWORD: ${SITE_DB_PASSWORD:?Required}
+    volumes: [site_db_v2:/var/lib/postgresql/data]
+    networks: [site_storage]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U site_user -d deutschmit_site"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+  site-migrate:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://site_user:${SITE_DB_PASSWORD:?Required}@site-db:5432/deutschmit_site
+    volumes: ["./db:/site-db:ro"]
+    networks: [site_storage]
+    depends_on:
+      site-db:
+        condition: service_healthy
+    command: ["sh", "-ec", "exec psql --no-psqlrc --dbname=\"$$DATABASE_URL\" --file=/site-db/migrate.psql"]
+  analytics-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: analytics_user
+      POSTGRES_DB: deutschmit_analytics
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD:?Required}
+    volumes: [analytics_db_v2:/var/lib/postgresql/data]
+    networks: [analytics_storage]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U analytics_user -d deutschmit_analytics"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+  analytics:
+    image: ${ANALYTICS_IMAGE:?Required}
+    build:
+      context: .
+      dockerfile: services/analytics/Dockerfile
+    restart: unless-stopped
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://analytics_user:${ANALYTICS_DB_PASSWORD:?Required}@analytics-db:5432/deutschmit_analytics
+      ANALYTICS_SERVICE_KEY: ${ANALYTICS_SERVICE_KEY:?Required}
+    networks: [analytics_http, analytics_storage]
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/health',{headers:{Authorization:'Bearer '+process.env.ANALYTICS_SERVICE_KEY}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      retries: 24
+    mem_limit: 256m
+  analytics-retention:
+    image: ${ANALYTICS_IMAGE:?Required}
+    restart: unless-stopped
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://analytics_user:${ANALYTICS_DB_PASSWORD:?Required}@analytics-db:5432/deutschmit_analytics
+    networks: [analytics_storage]
+    depends_on:
+      analytics:
+        condition: service_healthy
+    command: ["sh", "-ec", "while :; do npm run cleanup || exit 1; sleep 86400; done"]
+    mem_limit: 128m
+networks:
+  site_edge:
+    external: true
+    name: quiz-arena-site-edge
+  quiz_edge:
+    external: true
+    name: quiz-arena-edge
+  site_storage:
+    internal: true
+  analytics_http:
+    internal: true
+  analytics_storage:
+    internal: true
+volumes:
+  site_db_v2:
+  analytics_db_v2:

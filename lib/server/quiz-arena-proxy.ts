@@ -36,7 +36,7 @@ function unseal(value: string | undefined, siteToken: string): CookieJar {
 }
 
 export function allowedQuizRoute(path: string, method: string): boolean {
-  if (method === "GET") return /^(contact-requests|overview|users|users\/[1-9]\d*|content|system|economy\/(purchases|subscriptions|cohorts)|promo|promo\/(products|check-code)|promo\/[1-9]\d*(\/(stats|audit))?|auth\/session)$/.test(path);
+  if (method === "GET") return /^(website-analytics\/overview|contact-requests|overview|users|users\/[1-9]\d*|content|system|economy\/(purchases|subscriptions|cohorts)|promo|promo\/(products|check-code)|promo\/[1-9]\d*(\/(stats|audit))?|auth\/session)$/.test(path);
   if (method === "POST") return /^(auth\/(login|2fa\/verify|logout|refresh)|contact-requests\/[1-9]\d*\/status|users\/[1-9]\d*\/(bonus|block|unblock|reset_state)|promo|promo\/bulk-generate|promo\/[1-9]\d*\/(revoke|reveal))$/.test(path);
   if (method === "PATCH") return /^promo\/[1-9]\d*(\/toggle)?$/.test(path);
   return false;

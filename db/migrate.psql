@@ -11,5 +11,6 @@ SELECT to_regclass('public.contact_requests') IS NULL AS missing_contacts,
 \if :missing_legacy
 \ir migrations/0002_create_website_analytics_events.sql
 \endif
+\ir migrations/0003_contact_test_marker.sql
 SELECT 'public.contact_requests'::regclass, 'public.website_analytics_events'::regclass;
 SELECT pg_advisory_unlock(1847021102);

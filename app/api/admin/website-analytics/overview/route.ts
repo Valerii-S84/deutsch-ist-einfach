@@ -18,6 +18,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "invalid_days" }, { status: 400, headers: RESPONSE_HEADERS });
   }
 
+  if (process.env.SITE_LEGACY_ANALYTICS_SOURCE === "quiz-arena") {
+    // Keep the Quiz Arena cookie confined to its existing authenticated gateway.
+    return new NextResponse(null, { status: 307, headers: {
+      ...RESPONSE_HEADERS,
+      Location: `/api/admin/quiz-arena/website-analytics/overview?days=${days}`,
+    } });
+  }
+
   try {
     return NextResponse.json(await readSiteAnalyticsOverview(days), { headers: RESPONSE_HEADERS });
   } catch {

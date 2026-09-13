@@ -7,14 +7,14 @@ function reportEvents(sql: AnalyticsDatabase, days: AnalyticsReportDays) {
     SELECT statement_timestamp() AS generated_at,
       (date_trunc('day', statement_timestamp() AT TIME ZONE 'UTC') - (${days}::int - 1) * interval '1 day') AT TIME ZONE 'UTC' AS period_start
   ), events AS (
-    SELECT e.* FROM analytics_events e, bounds b WHERE e.product_id = ${ANALYTICS_PRODUCT}
+    SELECT e.* FROM analytics_report_events e, bounds b WHERE e.product_id = ${ANALYTICS_PRODUCT}
       AND e.occurred_at >= b.period_start AND e.occurred_at < b.generated_at
   )`;
 }
 function reportMeta(sql: AnalyticsDatabase) {
   return sql`b.generated_at, b.period_start,
-    (SELECT max(received_at) FROM analytics_events WHERE product_id = ${ANALYTICS_PRODUCT}) AS last_received_at,
-    (SELECT min(occurred_at) FROM analytics_events WHERE product_id = ${ANALYTICS_PRODUCT}) AS history_available_from`;
+    (SELECT max(received_at) FROM analytics_report_events WHERE product_id = ${ANALYTICS_PRODUCT}) AS last_received_at,
+    (SELECT min(occurred_at) FROM analytics_report_events WHERE product_id = ${ANALYTICS_PRODUCT}) AS history_available_from`;
 }
 function envelope(row: Record<string, unknown>, days: AnalyticsReportDays) {
   // postgres returns top-level timestamptz as Date, JSON aggregates as ISO strings.
@@ -29,7 +29,7 @@ export async function readPages(sql: AnalyticsDatabase, days: AnalyticsReportDay
     ORDER BY page_view_id, sequence, occurred_at, event_id
   ), measured AS (
     SELECT v.*, max((e.metadata->>'active_ms')::bigint) AS active_ms FROM views v
-    LEFT JOIN analytics_events e ON e.product_id = ${ANALYTICS_PRODUCT} AND e.page_view_id = v.page_view_id
+    LEFT JOIN analytics_report_events e ON e.product_id = ${ANALYTICS_PRODUCT} AND e.page_view_id = v.page_view_id
       AND e.event_name IN ('engagement', 'page_leave') AND e.occurred_at < (SELECT generated_at FROM bounds)
     GROUP BY v.page_view_id, v.path, v.visitor_id
   ), page_totals AS (
@@ -88,7 +88,7 @@ export async function readEvents(sql: AnalyticsDatabase, days: AnalyticsReportDa
 }
 
 export function sessionEntries(sql: AnalyticsDatabase) {
-  return sql`SELECT DISTINCT ON (session_id) session_id, metadata FROM analytics_events
+  return sql`SELECT DISTINCT ON (session_id) session_id, metadata FROM analytics_report_events
     WHERE product_id = ${ANALYTICS_PRODUCT}
     ORDER BY session_id, sequence NULLS LAST, occurred_at, event_id`;
 }

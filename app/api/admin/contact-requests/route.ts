@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
   if (!authenticated(request)) return reply({ error: "AUTH_REQUIRED" }, 401);
   const page = Number(request.nextUrl.searchParams.get("page") ?? 1);
   if (!Number.isSafeInteger(page) || page < 1 || page > 100_000) return reply({ error: "INVALID_PAGE" }, 400);
-  try { return reply(await readSiteContactRequests(page)); }
+  const scope = request.nextUrl.searchParams.get("scope") ?? "production";
+  if (!["production", "test"].includes(scope)) return reply({ error: "INVALID_SCOPE" }, 400);
+  try { return reply(scope === "test" ? await readSiteContactRequests(page, true) : await readSiteContactRequests(page)); }
   catch { return reply({ error: "CONTACTS_UNAVAILABLE" }, 503); }
 }
 const patchSchema = z.object({ id: z.string().uuid(), status: z.enum(CONTACT_REQUEST_STATUSES), expected_status: z.enum(CONTACT_REQUEST_STATUSES) }).strict();

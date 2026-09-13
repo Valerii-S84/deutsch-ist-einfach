@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import type { WebsiteAnalyticsOverviewData } from "@/lib/site-analytics-contract";
 
@@ -9,7 +10,7 @@ type DashboardWebsiteAnalyticsSectionProps = {
 };
 
 function formatNumber(value: number | undefined): string {
-  return new Intl.NumberFormat("de-DE").format(value ?? 0);
+  return value === undefined ? "—" : new Intl.NumberFormat("de-DE").format(value);
 }
 
 function formatDateLabel(value: string): string {
@@ -30,7 +31,7 @@ export function DashboardWebsiteAnalyticsSection({
     <section className="surface rounded-2xl p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl">Website Analytics</h2>
+          <h2 className="text-xl">Історична статистика сайту</h2>
           <p className="mt-1 text-sm text-ember/70">Letzte {data?.days ?? 7} Tage</p>
         </div>
         {isLoading ? <p className="text-xs text-ember/60">Wird geladen...</p> : null}
@@ -42,6 +43,7 @@ export function DashboardWebsiteAnalyticsSection({
             Website-Analytics konnten nicht geladen werden.
           </p>
           <p className="mt-1 text-xs text-red-700">{error.message}</p>
+          <Link className="mt-2 inline-block underline" href="/admin/quiz-arena/login">Увійти в Quiz Arena для доступу до історичного джерела</Link>
         </div>
       ) : null}
 
