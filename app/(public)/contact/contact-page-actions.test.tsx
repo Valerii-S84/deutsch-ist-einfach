@@ -70,7 +70,7 @@ describe("contact page actions", () => {
     }
   });
 
-  it("opens and tracks both existing request wizards", () => {
+  it("opens both request wizards without a duplicate form_open producer", () => {
     const { container, cleanup } = renderActions();
 
     try {
@@ -84,10 +84,7 @@ describe("contact page actions", () => {
 
       act(() => studentButton?.click());
       expect(container.querySelector('[data-open-wizard="student"]')).not.toBeNull();
-      expect(trackEventSpy).toHaveBeenCalledWith("wizard_open", {
-        wizard_type: "student",
-        source: "contact_page",
-      });
+      expect(trackEventSpy).not.toHaveBeenCalled();
 
       const closeButton = Array.from(container.querySelectorAll("button")).find((button) =>
         button.textContent?.includes("Testdialog schließen"),
@@ -96,10 +93,7 @@ describe("contact page actions", () => {
       act(() => partnerButton?.click());
 
       expect(container.querySelector('[data-open-wizard="partner"]')).not.toBeNull();
-      expect(trackEventSpy).toHaveBeenCalledWith("wizard_open", {
-        wizard_type: "partner",
-        source: "contact_page",
-      });
+      expect(trackEventSpy).not.toHaveBeenCalled();
     } finally {
       cleanup();
     }

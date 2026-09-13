@@ -1,5 +1,4 @@
-import PromoClientPage from "./promo-client";
-
-export default function PromoPage() {
-  return <PromoClientPage />;
+import { redirect } from "next/navigation";
+export default function LegacyAdminRoute() {
+  redirect("/admin/quiz-arena/promo");
 }

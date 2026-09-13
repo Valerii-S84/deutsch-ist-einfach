@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { analyticsAttributes } from "@/lib/analytics/elements";
 import type { Metadata } from "next";
 
 import { PublicLegalFooter } from "../_components/public-legal-footer";
@@ -31,6 +32,7 @@ const learningOffers = [
   {
     eyebrow: "Üben",
     name: "Quiz-Bot",
+    analyticsId: "telegram_bot",
     description:
       "Trainiere regelmäßig mit kurzen Quizrunden, Duellen und direktem Feedback in Telegram.",
     href: telegramBotUrl,
@@ -40,6 +42,7 @@ const learningOffers = [
   {
     eyebrow: "Verstehen",
     name: "Wissen & Tipps",
+    analyticsId: "nav_wissen",
     description:
       "Lies redaktionell geprüfte Artikel zu Sprachniveaus, Deutschprüfungen und Sprachgeschichte.",
     href: "/wissen",
@@ -49,6 +52,7 @@ const learningOffers = [
   {
     eyebrow: "Orientierung",
     name: "Lernbegleitung",
+    analyticsId: "nav_learning",
     description:
       "Teile uns Niveau, Ziel und Zeitplan mit. Wir prüfen, welcher nächste Lernschritt sinnvoll sein kann.",
     href: "/contact#lernbegleitung",
@@ -119,7 +123,7 @@ export default function ProjectsPage() {
                 return offer.external ? (
                   <a
                     key={offer.name}
-                    href={offer.href}
+                    href={offer.href} {...analyticsAttributes(offer.analyticsId, "projects")}
                     target="_blank"
                     rel="noreferrer"
                     className={className}
@@ -127,7 +131,7 @@ export default function ProjectsPage() {
                     {cardContent}
                   </a>
                 ) : (
-                  <Link key={offer.name} href={offer.href} className={className}>
+                  <Link key={offer.name} href={offer.href} {...analyticsAttributes(offer.analyticsId, "projects")} className={className}>
                     {cardContent}
                   </Link>
                 );

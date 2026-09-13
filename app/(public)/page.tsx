@@ -25,6 +25,9 @@ import {
 import { buildPublicSiteStructuredData } from "@/lib/public-site-structured-data";
 import PublicHomeClient from "./public-home-client";
 
+// Optional statistics are configured at runtime, including in images built with Quiz OFF.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Deutsch lernen mit Quiz und Artikeln",
   description: PUBLIC_SITE_DESCRIPTION,

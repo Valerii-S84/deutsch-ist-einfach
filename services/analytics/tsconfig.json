@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM", "DOM.Iterable"], "module": "CommonJS", "moduleResolution": "Node",
+    "rootDir": "../..", "outDir": "dist", "strict": true, "esModuleInterop": true, "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "../../lib/analytics/contract.ts", "../../lib/analytics/http.ts", "../../lib/analytics/report-contract.ts"],
+  "exclude": ["**/*.test.ts", "dist"]
+}

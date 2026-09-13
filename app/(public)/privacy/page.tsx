@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       <main className="mx-auto min-h-screen max-w-3xl px-6 py-14">
       <h1 className="text-3xl font-semibold text-slate-900">Datenschutzerklärung</h1>
       <p className="mt-4 text-sm leading-6 text-slate-700">
-        Stand: 12. August 2026. Diese Datenschutzerklärung gilt für die öffentliche Website{" "}
+        Stand: 9. September 2026. Diese Datenschutzerklärung gilt für die öffentliche Website{" "}
         {PUBLIC_SITE_NAME} mit ihren Informationsseiten, Artikelseiten, dem Kontaktbereich und dem
         öffentlichen Quiz-Teaser.
       </p>
@@ -121,8 +121,25 @@ export default function PrivacyPage() {
             Abs. 1 TDDDG.
           </p>
           <p className="mt-3">
-            Es ist derzeit kein separater externer Tracking-Anbieter für diese öffentliche Website
-            dokumentiert.
+            Wir erfassen nach deiner Zustimmung Seitenaufrufe, Seitenwechsel und Klicks auf
+            wichtige Links (etwa Telegram, Amazon und Downloads), sichtbare Angebote sowie Beginn und Ende einer Quizrunde. Dazu verwenden wir zufällige Browser-, Tab-Sitzungs- und
+            Seitenaufruf-Kennungen, Zeitpunkte, bekannte Seitenpfade und die Reihenfolge der
+            Ereignisse. Eine Sitzung gehört zu einem Tab; nach 30 Minuten ohne Aktivität beginnt
+            bei der nächsten Aktion eine neue Sitzung.
+          </p>
+          <p className="mt-3">
+            Wir übermitteln außerdem eine Schätzung der aktiven Zeit, erreichte Scrollschwellen und eine ungefähre Kennzeichnung gelesener Artikel. Bei Anfragen erfassen wir Öffnen, Absenden, feste Fehlercodes und nach erfolgreicher Speicherung eine zufällige Bestätigungskennung. Formularinhalte und die Kennung der gespeicherten Anfrage werden dabei nicht übertragen. Eine Analytics-Störung verhindert das Speichern deiner Anfrage nicht; in der Statistik kann die Bestätigung dann fehlen. Als Herkunft speichern wir nur den externen
+            Hostnamen und bereinigte allgemeine Kampagnenbezeichnungen (UTM). Vollständige URLs,
+            Suchparameter, Formulareingaben, Fehlertexte, Tasten und Mausbewegungen werden nicht
+            als Analytics-Ereignisse gespeichert. IP-Adressen dienen nur kurzzeitig der Begrenzung
+            von Anfragen und werden nicht in den Analytics-Datensätzen gespeichert.
+          </p>
+          <p className="mt-3">
+            Die Verarbeitung erfolgt in unserer eigenen Infrastruktur. Vor der Zustimmung werden
+            keine Analytics-Kennungen angelegt und keine Ereignisse für eine spätere Übermittlung
+            gesammelt. Deine Entscheidung wird getrennt im Browser gespeichert. Blockiertes
+            Browserspeichern oder Verbindungsfehler können die Messung verhindern; die Website
+            bleibt nutzbar. Die Statistik bildet nur tatsächlich übermittelte Beobachtungen ab.
           </p>
         </article>
 
@@ -133,7 +150,10 @@ export default function PrivacyPage() {
               Technisch notwendiges Quiz-Teaser-Cookie: bis zu 30 Tage.
             </li>
             <li>
-              Analytics-Ereignisse: 90 Tage.
+              Analytics-Ereignisse: 90 Tage. Browser-Kennung: ebenfalls 90 Tage. Beim nächsten
+              erfassten Ereignis nach Ablauf dieser Zeit wird sie erneuert. Sitzungsdaten werden
+              im jeweiligen Tab gespeichert. Nicht übermittelte
+              Ereignisse bleiben höchstens fünf Minuten im Arbeitsspeicher der Seite.
             </li>
             <li>
               Kontaktanfragen: 6 Monate nach der letzten Bearbeitung, sofern keine gesetzliche
@@ -170,8 +190,12 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-3">
             Eine erteilte Einwilligung für Analytics kannst du jederzeit mit Wirkung für die
-            Zukunft widerrufen, indem du deine Einwilligungseinstellungen änderst oder die
-            betreffenden Browserdaten löschst.
+            Zukunft unter „Analytics-Einstellungen“ im Footer jeder öffentlichen Seite
+            widerrufen. Der Widerruf stoppt die weitere Erfassung in den geöffneten Tabs und
+            entfernt die Analytics-Kennungen sowie noch wartende Ereignisse im Browser.
+            Bereits übermittelte Daten werden dadurch nicht automatisch gelöscht; eine Löschung
+            kannst du über die oben genannte Kontaktadresse anfragen. Eine erneute Zustimmung
+            beginnt mit neuen Kennungen ohne Verknüpfung zur vorherigen Sitzung.
           </p>
         </article>
 

@@ -471,7 +471,7 @@ describe("public quiz teaser widget", () => {
       expect(container.textContent).toContain("Das Quiz-Limit für heute ist erreicht.");
       expect(trackEventSpy).toHaveBeenCalledWith(
         "quiz_teaser_error",
-        expect.objectContaining({ question_index: 1 }),
+        expect.objectContaining({ error_code: "quiz_server_error" }),
       );
     } finally {
       cleanup();

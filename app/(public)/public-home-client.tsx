@@ -43,7 +43,7 @@ export default function PublicHomeClient({ children }: PublicHomeClientProps) {
           trackEvent(eventName, {
             section: analyticsTarget.getAttribute("data-analytics-section") || undefined,
             cta: analyticsTarget.getAttribute("data-analytics-cta") || undefined,
-            destination: analyticsTarget.getAttribute("href") || undefined,
+
           });
         }
       }
@@ -57,10 +57,7 @@ export default function PublicHomeClient({ children }: PublicHomeClientProps) {
         return;
       }
 
-      trackEvent("wizard_open", {
-        wizard_type: wizardType,
-        source: "home_contact_section",
-      });
+
       setActiveWizard(wizardType);
     };
 

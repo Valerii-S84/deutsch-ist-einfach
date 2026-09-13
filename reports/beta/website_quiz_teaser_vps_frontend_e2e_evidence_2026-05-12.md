@@ -1,5 +1,9 @@
 # Website Quiz Teaser VPS Frontend E2E Evidence
 
+> Historical evidence from before the canonical rename to `deutsch-ist-einfach`
+> (Deutsch ist einfach!). Image/container names and the page title below record the
+> deployment tested on that date; current deployment instructions are in [README.md](../../README.md).
+
 Date: 2026-05-12
 
 Scope: Controlled Protected Beta frontend deploy and live verification for `website_quiz_teaser`. This was not a broad public launch, not public signup, and not a commercial launch.

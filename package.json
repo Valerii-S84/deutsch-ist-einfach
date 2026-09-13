@@ -1,5 +1,5 @@
 {
-  "name": "quiz-arena-frontend",
+  "name": "deutsch-ist-einfach",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,25 +11,25 @@
     "test": "vitest run",
     "test:analytics-seo": "vitest run app/(public)/analytics-provider.test.tsx app/(public)/public-home-analytics.test.tsx app/(public)/seo-contracts.test.ts app/(public)/accessibility-behavior.test.tsx",
     "typecheck": "tsc --noEmit",
-    "ci": "npm run lint && npm test && npm run typecheck && npm run build",
-    "auth:boundary:smoke": "node scripts/auth-boundary-smoke.mjs"
+    "analytics:build": "npm --prefix services/analytics run build",
+    "analytics:migrate": "npm --prefix services/analytics run migrate",
+    "analytics:cleanup": "npm --prefix services/analytics run cleanup",
+    "analytics:delete-visitor": "npm --prefix services/analytics run delete-visitor --",
+    "ci": "npm run lint && npm test && npm run typecheck && npm run build && npm run analytics:build"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/space-grotesk": "^5.3.0",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-dialog": "^1.1.2",
-    "@radix-ui/react-select": "^2.1.2",
     "@tanstack/react-query": "^5.56.2",
-    "axios": "^1.15.0",
-    "date-fns": "^3.6.0",
     "next": "15.5.15",
+    "postgres": "^3.4.9",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "^7.53.0",
-    "recharts": "^2.12.7",
-    "zod": "^3.23.8",
-    "zustand": "^4.5.5"
+    "recharts": "^2.15.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",

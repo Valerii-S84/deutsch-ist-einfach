@@ -1,11 +1,13 @@
-# Frontend Repo Split Runbook
+# Deutsch ist einfach! Repository Split Runbook (historical)
 
-## Goal
+> This records the original repository extraction only. The Stage 6 standalone deployment is documented in [README.md](README.md); none of the backend cutover assumptions below apply to current deployment.
+
+## Original goal
 
 Extract `frontend/` into its own Git repository without changing the public routing surface:
 
 - `/` and `/admin` stay on the Next.js frontend
-- `/api/*` and `/webhook*` stay on the backend
+- `/api/contact` is handled by the frontend; the remaining `/api/*` and `/webhook*` stay on the backend
 
 This standalone repo is the result of that extraction.
 Commands that reference monorepo-root `scripts/` are pre-export steps only.
@@ -13,7 +15,7 @@ These scripts existed only in the source monorepo before extraction; they are no
 
 ## Current standalone repo
 
-- GitHub repo: `git@github.com:Valerii-S84/quiz-arena-frontend.git`
+- GitHub repo: `git@github.com:Valerii-S84/deutsch-ist-einfach.git`
 - The initial history-preserving export from monorepo `main` has already been pushed here.
 
 ## Verified frontend boundary
@@ -69,7 +71,7 @@ bash scripts/export_frontend_repo.sh \
   --strategy filter-repo \
   --include-working-tree \
   --output-dir .tmp/frontend-repo-export \
-  --remote-url git@github.com:Valerii-S84/quiz-arena-frontend.git
+  --remote-url git@github.com:Valerii-S84/deutsch-ist-einfach.git
 ```
 
 ## Manual Extraction: `git filter-repo`
@@ -77,11 +79,11 @@ bash scripts/export_frontend_repo.sh \
 Use this when `git filter-repo` is available. It produces the cleanest standalone history rewrite.
 
 ```bash
-git clone --branch main git@github.com:Valerii-S84/quiz-arena.git quiz-arena-frontend
-cd quiz-arena-frontend
+git clone --branch main git@github.com:Valerii-S84/quiz-arena.git deutsch-ist-einfach
+cd deutsch-ist-einfach
 git filter-repo --path frontend/ --path-rename frontend/:
 git remote remove origin
-git remote add origin git@github.com:Valerii-S84/quiz-arena-frontend.git
+git remote add origin git@github.com:Valerii-S84/deutsch-ist-einfach.git
 npm ci
 cp .env.example .env.local
 npm run ci
@@ -105,75 +107,20 @@ From the monorepo root:
 git checkout main
 git pull --ff-only
 git subtree split --prefix=frontend -b split/frontend-root
-git push git@github.com:Valerii-S84/quiz-arena-frontend.git split/frontend-root:main
+git push git@github.com:Valerii-S84/deutsch-ist-einfach.git split/frontend-root:main
 git branch -D split/frontend-root
 ```
 
 Then validate from a fresh clone of the new frontend repo:
 
 ```bash
-git clone --branch main git@github.com:Valerii-S84/quiz-arena-frontend.git quiz-arena-frontend
-cd quiz-arena-frontend
+git clone --branch main git@github.com:Valerii-S84/deutsch-ist-einfach.git deutsch-ist-einfach
+cd deutsch-ist-einfach
 npm ci
 cp .env.example .env.local
 npm run ci
 ```
 
-## After Export In The Standalone Repo
+## Current standalone deployment
 
-After the extraction is complete, this repo no longer contains the monorepo-root helper scripts above.
-At that point, use only the standalone repo root plus the backend integration points below.
-
-## Backend repo after the split
-
-The backend repo keeps:
-
-- `app/`
-- `alembic/`
-- backend `Dockerfile`
-- backend `scripts/`
-- `QuizBank/`
-- `app/ops_ui/site`
-- reverse-proxy / compose / deploy orchestration for the first iteration
-
-## Integration points that must not change in the first cutover
-
-- Reverse-proxy layout stays the same: `/` and `/admin` to frontend, `/api/*` and `/webhook*` to backend
-- Admin auth/session cookies stay on the same host/path surface
-- Browser-facing API calls should keep using the same-host `/api` path in production
-- SSR and server-side session checks must keep using `API_INTERNAL_URL`
-- Frontend route consumption stays centralized in `lib/api-routes.ts`
-- Public Telegram link config stays centralized in `lib/public-site-config.ts`
-- The first split should not move admin auth to a different subdomain
-
-## Post-split validation
-
-Local validation from the new frontend repo root:
-
-```bash
-npm ci
-cp .env.example .env.local
-npm run ci
-docker build \
-  -f Dockerfile \
-  . \
-  --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 \
-  --build-arg API_INTERNAL_URL=http://localhost:8000 \
-  --build-arg NEXT_PUBLIC_TELEGRAM_BOT_URL=https://t.me/Deine_Deutsch_Quiz_bot \
-  --build-arg NEXT_PUBLIC_TELEGRAM_CHANNEL_URL=https://t.me/doechkurse
-```
-
-Local environment note for this machine:
-
-- Use a mounted filesystem path such as `/mnt/c/...` for standalone validation
-- Avoid WSL-only paths such as `/tmp/...` for `npm` commands here, because the Windows `npm` executable falls back to a UNC current directory and fails before reading `package.json`
-
-Staging smoke scenarios after wiring the new frontend image:
-
-- public stats load
-- contact submit
-- admin login
-- admin 2FA verify
-- admin session check
-- admin logout
-- admin dashboard load
+Use the repository-owned `compose.yml`, `Caddyfile`, `.env.example` and the [Stage 6 deployment instructions](README.md#standalone-docker-compose-stage-6). All site APIs and admin authentication belong to this repository. No backend-repository orchestration, shared Docker network, backend auth/2FA or Quiz Arena service is required.

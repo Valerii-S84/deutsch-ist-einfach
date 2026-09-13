@@ -1,0 +1,315 @@
+diff --git a/app/api/routes/admin/users_bonus.py b/app/api/routes/admin/users_bonus.py
+--- a/app/api/routes/admin/users_bonus.py
++++ b/app/api/routes/admin/users_bonus.py
+@@ -11,6 +11,7 @@
+ from app.db.models.streak_state import StreakState
+ from app.db.models.user_events import UserEvent
+ from app.db.models.users import User
++from app.db.repo.entitlements_repo import EntitlementsRepo
+ from app.economy.energy.constants import (
+     ENERGY_REGEN_INTERVAL_SEC,
+     FREE_ENERGY_CAP,
+@@ -18,13 +19,42 @@
+ )
+ 
+ 
++async def _grant_premium_bonus(
++    session: AsyncSession, *, user_id: int, amount: int, now_utc: datetime
++) -> None:
++    # Match the unique index, including ACTIVE rows whose end date has passed.
++    entitlement = await EntitlementsRepo.get_premium_with_active_status_for_update(session, user_id)
++    if entitlement is not None:
++        if entitlement.ends_at is not None:
++            entitlement.ends_at = max(entitlement.ends_at, now_utc) + timedelta(days=amount)
++        entitlement.updated_at = now_utc
++        return
++
++    session.add(
++        Entitlement(
++            user_id=user_id,
++            entitlement_type="PREMIUM",
++            scope="ADMIN_BONUS",
++            status="ACTIVE",
++            starts_at=now_utc,
++            ends_at=now_utc + timedelta(days=amount),
++            source_purchase_id=None,
++            idempotency_key=f"admin_bonus:{uuid4().hex}",
++            metadata_={"bonus": True, "days": amount},
++            created_at=now_utc,
++            updated_at=now_utc,
++        )
++    )
++
++
+ async def apply_bonus(
+     session: AsyncSession, *, user_id: int, bonus_type: str, amount: int
+ ) -> dict[str, object]:
+-    now_utc = datetime.now(timezone.utc)
+-    user = await session.get(User, user_id)
++    # Serialize Premium grants even when the first entitlement does not exist yet.
++    user = await session.get(User, user_id, with_for_update=bonus_type == "premium_days")
+     if user is None:
+         raise HTTPException(status_code=404, detail={"code": "E_USER_NOT_FOUND"})
++    now_utc = datetime.now(timezone.utc)
+ 
+     if bonus_type == "energy":
+         energy = await session.get(EnergyState, user_id)
+@@ -60,20 +90,7 @@
+         streak.streak_saver_tokens += amount
+         streak.updated_at = now_utc
+     elif bonus_type == "premium_days":
+-        entitlement = Entitlement(
+-            user_id=user_id,
+-            entitlement_type="PREMIUM",
+-            scope="ADMIN_BONUS",
+-            status="ACTIVE",
+-            starts_at=now_utc,
+-            ends_at=now_utc + timedelta(days=amount),
+-            source_purchase_id=None,
+-            idempotency_key=f"admin_bonus:{uuid4().hex}",
+-            metadata_={"bonus": True, "days": amount},
+-            created_at=now_utc,
+-            updated_at=now_utc,
+-        )
+-        session.add(entitlement)
++        await _grant_premium_bonus(session, user_id=user_id, amount=amount, now_utc=now_utc)
+     else:
+         raise HTTPException(status_code=400, detail={"code": "E_INVALID_BONUS_TYPE"})
+ 
+diff --git a/app/api/routes/admin/overview_series.py b/app/api/routes/admin/overview_series.py
+--- a/app/api/routes/admin/overview_series.py
++++ b/app/api/routes/admin/overview_series.py
+@@ -76,7 +76,11 @@
+     rows = (
+         await session.execute(
+             select(func.date(Purchase.paid_at), func.coalesce(func.sum(Purchase.stars_amount), 0))
+-            .where(Purchase.paid_at >= from_utc, Purchase.paid_at < to_utc)
++            .where(
++                Purchase.paid_at >= from_utc,
++                Purchase.paid_at < to_utc,
++                Purchase.status.in_(("PAID_UNCREDITED", "CREDITED")),
++            )
+             .group_by(func.date(Purchase.paid_at))
+             .order_by(func.date(Purchase.paid_at))
+         )
+@@ -168,7 +172,11 @@
+     rows = (
+         await session.execute(
+             select(Purchase.product_code, func.coalesce(func.sum(Purchase.stars_amount), 0))
+-            .where(Purchase.paid_at >= from_utc, Purchase.paid_at < to_utc)
++            .where(
++                Purchase.paid_at >= from_utc,
++                Purchase.paid_at < to_utc,
++                Purchase.status.in_(("PAID_UNCREDITED", "CREDITED")),
++            )
+             .group_by(Purchase.product_code)
+             .order_by(func.coalesce(func.sum(Purchase.stars_amount), 0).desc())
+             .limit(5)
+diff --git a/tests/api/admin/test_admin_users.py b/tests/api/admin/test_admin_users.py
+--- a/tests/api/admin/test_admin_users.py
++++ b/tests/api/admin/test_admin_users.py
+@@ -307,7 +307,9 @@
+         gets[("EnergyState", 101)] = None
+     elif bonus_type == "streak_token":
+         gets[("StreakState", 101)] = None
+-    session = _Session(gets=gets)
++    session = _Session(
++        gets=gets, exec_results=[_ScalarResult(None)] if bonus_type == "premium_days" else []
++    )
+ 
+     result = cast(
+         _BonusPayload,
+diff --git a/tests/integration/test_admin_overview_stats_integration.py b/tests/integration/test_admin_overview_stats_integration.py
+--- a/tests/integration/test_admin_overview_stats_integration.py
++++ b/tests/integration/test_admin_overview_stats_integration.py
+@@ -5,7 +5,9 @@
+ 
+ import pytest
+ 
++from app.api.routes.admin.overview_metrics import sum_revenue_stars
+ from app.api.routes.admin.overview_queries import build_overview_payload
++from app.api.routes.admin.overview_series import fetch_revenue_series, fetch_top_products
+ from app.core.analytics_events import EVENT_SOURCE_BOT, emit_analytics_event
+ from app.db.models.purchases import Purchase
+ from app.db.models.quiz_sessions import QuizSession
+@@ -190,3 +192,41 @@
+         {"step": "Streak 3+", "value": 1},
+         {"step": "Purchase", "value": 1},
+     ]
++
++
++@pytest.mark.parametrize("days", [7, 30, 90])
++@pytest.mark.parametrize("include_paid", [False, True])
++async def test_revenue_card_series_and_products_exclude_refunds(
++    days: int, include_paid: bool
++) -> None:
++    now_utc = datetime(2026, 9, 8, 12, tzinfo=UTC)
++    from_utc = now_utc - timedelta(days=days)
++    user_id = await _create_user(seed="revenue-refund", created_at=from_utc, last_seen_at=None)
++    cases: list[tuple[str, datetime | None]] = [("REFUNDED", from_utc)]
++    if include_paid:
++        cases += [
++            ("PAID_UNCREDITED", from_utc),
++            ("CREDITED", now_utc - timedelta(microseconds=1)),
++            ("CREDITED", from_utc - timedelta(microseconds=1)),
++            ("CREDITED", now_utc),
++            ("CREDITED", None),
++            ("FAILED", from_utc),
++            ("FAILED_CREDIT_PENDING_REVIEW", from_utc),
++        ]
++    async with SessionLocal.begin() as session:
++        for index, (status, paid_at) in enumerate(cases):
++            purchase = _purchase(user_id=user_id, paid_at=from_utc, suffix=str(index))
++            purchase.status = status
++            purchase.paid_at = paid_at
++            session.add(purchase)
++    async with SessionLocal() as session:
++        card = await sum_revenue_stars(session, from_utc=from_utc, to_utc=now_utc)
++        series = await fetch_revenue_series(session, from_utc=from_utc, to_utc=now_utc)
++        products = await fetch_top_products(session, from_utc=from_utc, to_utc=now_utc)
++    expected = 200 if include_paid else 0
++    assert card == expected
++    assert sum(as_any_dict(row)["stars"] for row in series) == expected
++    assert sum(as_any_dict(row)["eur"] for row in series) == pytest.approx(expected * 0.02)
++    assert products == (
++        [{"product": "PREMIUM_MONTH", "revenue_stars": expected}] if expected else []
++    )
+diff --git a/tests/integration/test_admin_bonus_integration.py b/tests/integration/test_admin_bonus_integration.py
+--- /dev/null
++++ b/tests/integration/test_admin_bonus_integration.py
+@@ -0,0 +1,135 @@
++from __future__ import annotations
++
++import asyncio
++from datetime import datetime, timedelta, timezone
++from typing import cast
++from uuid import uuid4
++
++import pytest
++from httpx import ASGITransport, AsyncClient
++from sqlalchemy import select
++
++from app.api.routes.admin import users_helpers
++from app.db.models.admin_audit_log import AdminAuditLog
++from app.db.models.entitlements import Entitlement
++from app.db.session import SessionLocal
++from app.main import app
++from tests.integration.admin_promo_test_support import (
++    admin_headers,
++    create_user,
++    set_admin_authority,
++)
++
++NOW = datetime(2026, 9, 8, 12, tzinfo=timezone.utc)
++
++
++@pytest.fixture(autouse=True)
++def freeze_bonus_clock(monkeypatch: pytest.MonkeyPatch) -> None:
++    class FrozenDatetime(datetime):
++        @classmethod
++        def now(cls, tz=None):
++            return NOW
++
++    monkeypatch.setattr(users_helpers, "datetime", FrozenDatetime)
++
++
++async def _premium(user_id: int) -> Entitlement:
++    async with SessionLocal() as session:
++        return (
++            await session.execute(
++                select(Entitlement).where(
++                    Entitlement.user_id == user_id,
++                    Entitlement.entitlement_type == "PREMIUM",
++                    Entitlement.status == "ACTIVE",
++                )
++            )
++        ).scalar_one()
++
++
++async def _grant(user_id: int, amount: int) -> None:
++    async with SessionLocal.begin() as session:
++        await users_helpers.apply_bonus(
++            session, user_id=user_id, bonus_type="premium_days", amount=amount
++        )
++
++
++async def test_repeated_premium_bonus_api_persists_extension_and_audit() -> None:
++    await set_admin_authority()
++    user_id = await create_user("premium-bonus-api")
++    started_at = datetime.now(timezone.utc)
++    async with AsyncClient(
++        transport=ASGITransport(app=app), base_url="http://testserver"
++    ) as client:
++        for amount in (7, 3):
++            response = await client.post(
++                f"/admin/users/{user_id}/bonus",
++                json={"type": "premium_days", "amount": amount},
++                headers=admin_headers(role="admin"),
++            )
++            assert response.status_code == 200
++            assert response.json()["result"]["amount"] == amount
++        profile = await client.get(f"/admin/users/{user_id}", headers=admin_headers(role="admin"))
++    assert profile.status_code == 200
++    bonuses = [
++        row
++        for row in profile.json()["timeline"]
++        if row["type"] == "admin_bonus_premium_days"
++        and datetime.fromisoformat(row["created_at"]) >= started_at
++    ]
++    assert sorted(row["payload"]["amount"] for row in bonuses) == [3, 7]
++    entitlement = await _premium(user_id)
++    assert entitlement.starts_at == NOW
++    assert entitlement.ends_at == NOW + timedelta(days=10)
++    async with SessionLocal() as session:
++        audits = (
++            await session.scalars(
++                select(AdminAuditLog).where(
++                    AdminAuditLog.action == "user_bonus",
++                    AdminAuditLog.target_id == str(user_id),
++                    AdminAuditLog.created_at >= started_at,
++                )
++            )
++        ).all()
++    assert sorted(cast(int, row.payload["amount"]) for row in audits) == [3, 7]
++
++
++@pytest.mark.parametrize("remaining_days", [5, 0, -1, None])
++async def test_premium_bonus_preserves_existing_entitlement(
++    remaining_days: int | None,
++) -> None:
++    user_id = await create_user("premium-bonus-existing")
++    ends_at = None if remaining_days is None else NOW + timedelta(days=remaining_days)
++    async with SessionLocal.begin() as session:
++        original = Entitlement(
++            user_id=user_id,
++            entitlement_type="PREMIUM",
++            scope="PREMIUM_YEAR",
++            status="ACTIVE",
++            starts_at=NOW - timedelta(days=30),
++            ends_at=ends_at,
++            idempotency_key=f"test-premium:{uuid4()}",
++            metadata_={"preserve": True},
++            created_at=NOW - timedelta(days=30),
++            updated_at=NOW - timedelta(days=30),
++        )
++        session.add(original)
++        await session.flush()
++        original_id = original.id
++    await _grant(user_id, 3)
++    entitlement = await _premium(user_id)
++    expected_end = None if ends_at is None else max(ends_at, NOW) + timedelta(days=3)
++    assert entitlement.id == original_id
++    assert entitlement.ends_at == expected_end
++    assert entitlement.scope == "PREMIUM_YEAR"
++    assert entitlement.starts_at == NOW - timedelta(days=30)
++    assert entitlement.metadata_ == {"preserve": True}
++
++
++@pytest.mark.parametrize("existing", [False, True])
++async def test_concurrent_premium_bonuses_keep_one_entitlement_and_all_days(existing: bool) -> None:
++    user_id = await create_user("premium-bonus-concurrent")
++    if existing:
++        await _grant(user_id, 5)
++    await asyncio.gather(_grant(user_id, 7), _grant(user_id, 3))
++    entitlement = await _premium(user_id)
++    assert entitlement.ends_at == NOW + timedelta(days=15 if existing else 10)

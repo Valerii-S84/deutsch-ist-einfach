@@ -1,10 +1,12 @@
-import { getBrowserApiUrl } from "@/lib/api-config";
-import { apiRoutes } from "@/lib/api-routes";
 import {
   PUBLIC_VISITOR_ID_STORAGE_KEY,
+  PUBLIC_VISITOR_AGE_STORAGE_KEY,
+  ANALYTICS_CONSENT_STORAGE_KEY,
   type PublicAnalyticsPayload,
   type WebsiteAnalyticsEventType,
 } from "@/lib/analytics";
+import { normalizeAnalyticsPath } from "@/lib/analytics/contract";
+import { readTraffic, VISITOR_TTL } from "@/lib/analytics/identity";
 
 type WebsiteAnalyticsPayload = {
   event_type: WebsiteAnalyticsEventType;
@@ -61,14 +63,21 @@ export function getOrCreatePublicVisitorId(): string | null {
     return null;
   }
 
-  const storedValue = window.localStorage.getItem(PUBLIC_VISITOR_ID_STORAGE_KEY);
-  if (isValidVisitorId(storedValue)) {
-    return storedValue;
-  }
-
-  const visitorId = createVisitorId();
-  window.localStorage.setItem(PUBLIC_VISITOR_ID_STORAGE_KEY, visitorId);
-  return visitorId;
+  try {
+    if (window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY) !== "granted") return null;
+    const storedValue = window.localStorage.getItem(PUBLIC_VISITOR_ID_STORAGE_KEY);
+    let age: { id?: unknown; created?: unknown } | null = null;
+    try { age = JSON.parse(window.localStorage.getItem(PUBLIC_VISITOR_AGE_STORAGE_KEY) ?? "null"); } catch {}
+    const now = Date.now();
+    if (isValidVisitorId(storedValue) && age?.id === storedValue && typeof age.created === "number"
+      && Number.isFinite(age.created) && age.created >= 0 && age.created <= now && now - age.created < VISITOR_TTL) return storedValue;
+    // Existing IDs without a known creation date rotate once; do not reset their age
+    // on every visit. Keep the legacy string ID format for existing clients.
+    const visitorId = createVisitorId();
+    window.localStorage.setItem(PUBLIC_VISITOR_AGE_STORAGE_KEY, JSON.stringify({ id: visitorId, created: now }));
+    window.localStorage.setItem(PUBLIC_VISITOR_ID_STORAGE_KEY, visitorId);
+    return visitorId;
+  } catch { return null; }
 }
 
 function currentPath(): string {
@@ -76,30 +85,6 @@ function currentPath(): string {
     return "/";
   }
   return window.location.pathname || "/";
-}
-
-function safeReferrer(): string | undefined {
-  if (typeof document === "undefined" || !document.referrer) {
-    return undefined;
-  }
-
-  try {
-    const referrer = new URL(document.referrer);
-    if (referrer.protocol !== "http:" && referrer.protocol !== "https:") {
-      return undefined;
-    }
-    return `${referrer.host}${referrer.pathname}`.slice(0, 512);
-  } catch {
-    return undefined;
-  }
-}
-
-function readUtmParam(name: string): string | undefined {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-  const value = new URLSearchParams(window.location.search).get(name)?.trim();
-  return value ? value.slice(0, 160) : undefined;
 }
 
 function sanitizeMetadata(
@@ -137,11 +122,11 @@ function buildPayload(input: SendWebsiteAnalyticsEventInput): WebsiteAnalyticsPa
   return {
     event_type: input.eventType,
     visitor_id: visitorId,
-    path: input.path ?? currentPath(),
-    referrer: safeReferrer(),
-    utm_source: readUtmParam("utm_source"),
-    utm_medium: readUtmParam("utm_medium"),
-    utm_campaign: readUtmParam("utm_campaign"),
+    path: normalizeAnalyticsPath(input.path ?? currentPath()),
+    referrer: readTraffic().referrer_host,
+    utm_source: readTraffic().utm_source,
+    utm_medium: readTraffic().utm_medium,
+    utm_campaign: readTraffic().utm_campaign,
     timestamp: input.timestamp ?? new Date().toISOString(),
     metadata: sanitizeMetadata(input.metadata),
   };
@@ -158,9 +143,9 @@ export function sendWebsiteAnalyticsEvent(input: SendWebsiteAnalyticsEventInput)
   }
 
   const body = JSON.stringify(payload);
-  const url = getBrowserApiUrl(apiRoutes.public.websiteAnalyticsEvents);
+  const url = "/api/public/website-analytics/events";
 
-  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+  try { if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
     const sent = navigator.sendBeacon(
       url,
       new Blob([body], { type: "application/json" }),
@@ -169,6 +154,8 @@ export function sendWebsiteAnalyticsEvent(input: SendWebsiteAnalyticsEventInput)
       return true;
     }
   }
+
+  } catch { /* A blocked beacon must not interrupt navigation. */ }
 
   if (typeof fetch !== "function") {
     return false;

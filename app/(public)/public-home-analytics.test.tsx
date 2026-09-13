@@ -101,7 +101,7 @@ describe("public home analytics event wiring", () => {
         expect.objectContaining({
           section: "header",
           cta: "telegram_bot",
-          destination: headerCta?.getAttribute("href"),
+          destination: "telegram",
         }),
       );
     } finally {
@@ -230,7 +230,7 @@ describe("public home analytics event wiring", () => {
     }
   });
 
-  it("tracks wizard_open for both student and partner entry points", () => {
+  it("opens both wizards without duplicating their own form_open producer", () => {
     const { container, cleanup } = renderHomeForAnalytics();
 
     try {
@@ -247,18 +247,14 @@ describe("public home analytics event wiring", () => {
       act(() => {
         studentButton?.click();
       });
-      expect(trackEventSpy).toHaveBeenCalledWith(
-        "wizard_open",
-        expect.objectContaining({ wizard_type: "student", source: "home_contact_section" }),
-      );
+      expect(container.querySelector('[data-wizard-open="student"]')).not.toBeNull();
+      expect(trackEventSpy).not.toHaveBeenCalled();
 
       act(() => {
         partnerButton?.click();
       });
-      expect(trackEventSpy).toHaveBeenCalledWith(
-        "wizard_open",
-        expect.objectContaining({ wizard_type: "partner", source: "home_contact_section" }),
-      );
+      expect(container.querySelector('[data-wizard-open="partner"]')).not.toBeNull();
+      expect(trackEventSpy).not.toHaveBeenCalled();
     } finally {
       cleanup();
     }

@@ -12,7 +12,7 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   {
-    ignores: [".next/**", "inspect-wizard.mjs"],
+    ignores: [".next/**", ".verification/**", "services/analytics/dist/**", "inspect-wizard.mjs"],
   },
   ...compat.extends("next/core-web-vitals"),
 ];

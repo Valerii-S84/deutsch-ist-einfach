@@ -1,0 +1,62 @@
+# Synthetic local stand only. Never combine with the root Compose or .env files.
+name: website-analytics-acceptance
+services:
+  gateway:
+    image: node:22-alpine
+    command: ["node", "/test/tcp-gateway.mjs"]
+    volumes:
+      - ./tests/tcp-gateway.mjs:/test/tcp-gateway.mjs:ro
+    ports:
+      - "127.0.0.1:45440:3100"
+      - "127.0.0.1:45442:5432"
+      - "127.0.0.1:45443:5433"
+    networks: [default, isolated]
+  analytics:
+    image: website-analytics-acceptance:local
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://analytics_user:synthetic-analytics-only@analytics-db:5432/deutschmit_analytics
+      ANALYTICS_SERVICE_KEY: synthetic-analytics-key-at-least-32-bytes
+    networks: [isolated]
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/health',{headers:{Authorization:'Bearer '+process.env.ANALYTICS_SERVICE_KEY}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: analytics_user
+      POSTGRES_PASSWORD: synthetic-analytics-only
+      POSTGRES_DB: deutschmit_analytics
+    volumes:
+      - analytics_acceptance:/var/lib/postgresql/data
+    networks: [isolated]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analytics_user -d deutschmit_analytics"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  site-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: site_test
+      POSTGRES_PASSWORD: synthetic-site-only
+      POSTGRES_DB: site_analytics_acceptance
+    volumes:
+      - site_acceptance:/var/lib/postgresql/data
+      - ../../db/migrations:/docker-entrypoint-initdb.d:ro
+    networks: [isolated]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U site_test -d site_analytics_acceptance -h 127.0.0.1"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+volumes:
+  analytics_acceptance:
+  site_acceptance:
+networks:
+  isolated:
+    internal: true

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { analyticsAttributes } from "@/lib/analytics/elements";
+import { AnalyticsSettingsButton } from "@/app/analytics-settings-button";
 
 import { PUBLIC_SITE_NAME } from "@/lib/public-site-config";
 
@@ -17,20 +19,21 @@ export function PublicLegalFooter({ variant = "light" }: PublicLegalFooterProps)
     <footer className={`mt-10 border-t ${borderClass} pt-6 text-sm ${textClass}`}>
       <p>© 2026 {PUBLIC_SITE_NAME}</p>
       <nav aria-label="Footer-Navigation" className="mt-3 flex flex-wrap gap-3">
+        <AnalyticsSettingsButton className={`transition ${hoverClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 ${ringOffsetClass}`} />
         <Link
-          href="/"
+          href="/" {...analyticsAttributes("nav_home", "footer")}
           className={`transition ${hoverClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 ${ringOffsetClass}`}
         >
           Startseite
         </Link>
         <Link
-          href="/projects"
+          href="/projects" {...analyticsAttributes("nav_projects", "footer")}
           className={`transition ${hoverClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 ${ringOffsetClass}`}
         >
           Lernangebote
         </Link>
         <Link
-          href="/wissen"
+          href="/wissen" {...analyticsAttributes("nav_wissen", "footer")}
           className={`transition ${hoverClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 ${ringOffsetClass}`}
         >
           Wissen &amp; Tipps
@@ -48,7 +51,7 @@ export function PublicLegalFooter({ variant = "light" }: PublicLegalFooterProps)
           Datenschutz
         </Link>
         <Link
-          href="/contact"
+          href="/contact" {...analyticsAttributes("nav_contact", "footer")}
           className={`transition ${hoverClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 ${ringOffsetClass}`}
         >
           Kontakt
