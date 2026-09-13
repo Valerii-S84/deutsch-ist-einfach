@@ -19,8 +19,17 @@ site = pathlib.Path('/opt/quiz-arena-site')
 previous = (site / 'current').resolve()
 assert previous.parent == root.parent and previous != root
 op = str(root / 'deploy/production/operate.sh')
+assert sys.argv[2:] in ([], ['--resume'])
+resume = sys.argv[2:] == ['--resume']
+for shell_script in (root / 'deploy/production').glob('*.sh'):
+    shell_script.write_bytes(shell_script.read_bytes().replace(b'\r\n', b'\n'))
 
 def build(label, args):
+    if resume:
+        image = args[args.index('-t') + 1]
+        assert run(['docker', 'image', 'inspect', '--format', '{{index .Config.Labels "org.opencontainers.image.revision"}}', image]) == revision
+        print('REUSE_VERIFIED_IMAGE ' + label, flush=True)
+        return
     print('BUILD_START ' + label, flush=True)
     with (root / ('build-' + label + '.log')).open('w') as log:
         result = subprocess.run(args, cwd=root, stdout=log, stderr=subprocess.STDOUT, timeout=900)
@@ -44,25 +53,26 @@ build('analytics', ['docker', 'build', '-f', 'services/analytics/Dockerfile', '-
 front_id = run(['docker', 'image', 'inspect', '--format', '{{.Id}}', front])
 analytics_id = run(['docker', 'image', 'inspect', '--format', '{{.Id}}', analytics])
 
-# Exercise the reporting view on synthetic records in an inaccessible disposable DB.
-network = 'deutschmit-stats-check-' + revision[:12]
-container = network + '-db'
-assert subprocess.run(['docker', 'container', 'inspect', container], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
-assert subprocess.run(['docker', 'network', 'inspect', network], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
-run(['docker', 'network', 'create', '--internal', network])
-try:
-    run(['docker', 'run', '-d', '--name', container, '--network', network,
-        '-e', 'POSTGRES_USER=analytics_user', '-e', 'POSTGRES_DB=deutschmit_analytics',
-        '-e', 'POSTGRES_PASSWORD=synthetic-statistics-check-only', 'postgres:16-alpine'])
-    run(['docker', 'exec', container, 'sh', '-ec', 'for i in $(seq 1 30); do pg_isready -h 127.0.0.1 -U analytics_user -d deutschmit_analytics && exit 0; sleep 1; done; exit 1'], timeout=40)
-    for migration in sorted((root / 'services/analytics/db/migrations').glob('*.sql')):
-        run(['docker', 'exec', '-i', container, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'analytics_user', '-d', 'deutschmit_analytics'], input=migration.read_text())
-    print(run(['docker', 'run', '--rm', '-i', '--network', network,
-        '-e', 'ANALYTICS_DATABASE_URL=postgresql://analytics_user:synthetic-statistics-check-only@' + container + ':5432/deutschmit_analytics',
-        analytics_id, 'node', '--input-type=module'], input=(root / 'deploy/production/check-report-exclusions.mjs').read_text()), flush=True)
-finally:
-    subprocess.run(['docker', 'rm', '-f', container], stdout=subprocess.DEVNULL)
-    subprocess.run(['docker', 'network', 'rm', network], stdout=subprocess.DEVNULL)
+if not resume:
+    # Exercise the reporting view on synthetic records in an inaccessible disposable DB.
+    network = 'deutschmit-stats-check-' + revision[:12]
+    container = network + '-db'
+    assert subprocess.run(['docker', 'container', 'inspect', container], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+    assert subprocess.run(['docker', 'network', 'inspect', network], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+    run(['docker', 'network', 'create', '--internal', network])
+    try:
+        run(['docker', 'run', '-d', '--name', container, '--network', network,
+            '-e', 'POSTGRES_USER=analytics_user', '-e', 'POSTGRES_DB=deutschmit_analytics',
+            '-e', 'POSTGRES_PASSWORD=synthetic-statistics-check-only', 'postgres:16-alpine'])
+        run(['docker', 'exec', container, 'sh', '-ec', 'for i in $(seq 1 30); do pg_isready -h 127.0.0.1 -U analytics_user -d deutschmit_analytics && exit 0; sleep 1; done; exit 1'], timeout=40)
+        for migration in sorted((root / 'services/analytics/db/migrations').glob('*.sql')):
+            run(['docker', 'exec', '-i', container, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'analytics_user', '-d', 'deutschmit_analytics'], input=migration.read_text())
+        print(run(['docker', 'run', '--rm', '-i', '--network', network,
+            '-e', 'ANALYTICS_DATABASE_URL=postgresql://analytics_user:synthetic-statistics-check-only@' + container + ':5432/deutschmit_analytics',
+            analytics_id, 'node', '--input-type=module'], input=(root / 'deploy/production/check-report-exclusions.mjs').read_text()), flush=True)
+    finally:
+        subprocess.run(['docker', 'rm', '-f', container], stdout=subprocess.DEVNULL)
+        subprocess.run(['docker', 'network', 'rm', network], stdout=subprocess.DEVNULL)
 
 release = site / 'release.env'
 old_release = release.read_text()
