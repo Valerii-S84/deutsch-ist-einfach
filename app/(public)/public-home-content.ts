@@ -13,9 +13,6 @@ export const ORANGE_BUTTON_CLASS =
 export const SECONDARY_BUTTON_CLASS =
   "inline-flex min-h-11 max-w-full items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-center text-sm font-semibold leading-snug text-white transition hover:border-[#FFD166]/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD166] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f]";
 
-export const INPUT_CLASS =
-  "w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200";
-
 export const WISSEN_ARTICLES = [
   {
     slug: "deutsche-sprache-geschichte",

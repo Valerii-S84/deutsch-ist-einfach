@@ -1,322 +1,128 @@
 "use client";
 
-import {
-  ANALYTICS_CONSENT_STORAGE_KEY,
-  PUBLIC_VISITOR_ID_STORAGE_KEY,
-  type PublicAnalyticsEventName,
-  type PublicAnalyticsPayload,
-  type QueuedPublicAnalyticsEvent,
-} from "@/lib/analytics";
-import {
-  getOrCreatePublicVisitorId,
-  sendWebsiteAnalyticsEvent,
-} from "@/lib/public-analytics-client";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { ANALYTICS_CONSENT_STORAGE_KEY, WEBSITE_CONSENT_STORAGE_KEY, PUBLIC_VISITOR_ID_STORAGE_KEY, PUBLIC_VISITOR_AGE_STORAGE_KEY, getAnalyticsMode, type AnalyticsConsent, type AnalyticsMode, type PublicAnalyticsEventName, type PublicAnalyticsPayload } from "@/lib/analytics";
+import { WebsiteAnalytics, telegramClick } from "@/lib/analytics/browser";
+import { clearAnalyticsIdentity } from "@/lib/analytics/identity";
+import { sendWebsiteAnalyticsEvent } from "@/lib/public-analytics-client";
+import type { AnalyticsFormId, ContactAnalyticsContext } from "@/lib/analytics/contract";
 
-type AnalyticsConsent = "pending" | "granted" | "denied";
-
-type AnalyticsContextValue = {
-  consent: AnalyticsConsent;
-  requestConsent: (value: boolean) => void;
-  trackEvent: (name: PublicAnalyticsEventName, payload?: PublicAnalyticsPayload) => void;
-};
-
-const MAX_QUEUED_EVENTS = 40;
-
-const AnalyticsContext = createContext<AnalyticsContextValue>({
-  consent: "pending",
-  requestConsent: () => {},
-  trackEvent: () => {},
+const AnalyticsContext = createContext({
+  consent: "pending" as AnalyticsConsent,
+  requestConsent: (_allowed: boolean) => {},
+  openSettings: () => {},
+  trackEvent: (_name: PublicAnalyticsEventName, _payload?: PublicAnalyticsPayload) => {},
+  prepareFormSubmission: async (_form: AnalyticsFormId): Promise<ContactAnalyticsContext | undefined> => undefined,
 });
+export function usePublicAnalytics() { return useContext(AnalyticsContext); }
 
-type AnalyticsProviderProps = {
-  children: ReactNode;
-};
-
-type WindowWithAnalytics = Window & {
-  dataLayer?: Array<Record<string, unknown>>;
-  gtag?: (...args: unknown[]) => void;
-  __quizArenaPublicAnalytics?: Array<Record<string, unknown>>;
-};
-
-function normalizeConsentValue(value: string | null): AnalyticsConsent {
-  if (value === "granted" || value === "denied") {
-    return value;
-  }
-
-  return "pending";
+function readConsent(key: string): AnalyticsConsent {
+  try {
+    const value = localStorage.getItem(key);
+    return value === "granted" || value === "denied" ? value : "pending";
+  } catch { return "pending"; }
 }
 
-function buildBaseEventPayload(name: PublicAnalyticsEventName, payload: PublicAnalyticsPayload) {
-  return {
-    ...payload,
-    event_name: name,
-    event_category: "public",
-  };
-}
-
-type PageEventContext = {
-  page_path: string;
-  page_title: string;
-  timestamp: string;
-};
-
-function getPageContext(timestamp = new Date().toISOString()): PageEventContext {
-  return {
-    page_path: window.location.pathname,
-    page_title: document.title,
-    timestamp,
-  };
-}
-
-function emitToWindow(
-  name: PublicAnalyticsEventName,
-  payload: PublicAnalyticsPayload,
-  context: PageEventContext,
-) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const eventPayload = buildBaseEventPayload(name, payload);
-  const eventWindow = window as WindowWithAnalytics;
-
-  eventWindow.__quizArenaPublicAnalytics = eventWindow.__quizArenaPublicAnalytics ?? [];
-  eventWindow.__quizArenaPublicAnalytics.push({
-    ...eventPayload,
-    ...context,
-  });
-
-  if (eventWindow.dataLayer) {
-    eventWindow.dataLayer.push({ event: name, ...eventPayload });
-  }
-
-  eventWindow.dispatchEvent?.(
-    new CustomEvent("quiz-arena-analytics-event", {
-      detail: eventPayload,
-    }),
-  );
-}
-
-function isTelegramCtaEvent(
-  name: PublicAnalyticsEventName,
-  payload: PublicAnalyticsPayload,
-): boolean {
-  const cta = typeof payload.cta === "string" ? payload.cta : "";
-  const destination = typeof payload.destination === "string" ? payload.destination : "";
-
-  if (name === "channel_cta_click") {
-    return true;
-  }
-
-  if (name === "quiz_teaser_cta_clicked") {
-    return destination === "telegram_bot";
-  }
-
-  return name === "hero_cta_click" && cta === "telegram_bot";
-}
-
-function dispatchTrackedEvent(
-  name: PublicAnalyticsEventName,
-  payload: PublicAnalyticsPayload,
-  context?: PageEventContext,
-) {
-  const eventContext = context ?? getPageContext();
-  emitToWindow(name, payload, eventContext);
-
-  if (!isTelegramCtaEvent(name, payload)) {
-    return;
-  }
-
-  sendWebsiteAnalyticsEvent({
-    eventType: "telegram_cta_click",
-    path: eventContext.page_path,
-    timestamp: eventContext.timestamp,
-    metadata: {
-      public_event_name: name,
-      ...payload,
-    },
-  });
-}
-
-export function usePublicAnalytics() {
-  return useContext(AnalyticsContext);
-}
-
-function ConsentNotice({
-  onAccept,
-  onReject,
-}: {
-  onAccept: () => void;
-  onReject: () => void;
-}) {
-  return (
-    <section
-      className="fixed inset-x-0 bottom-0 z-[80] bg-white p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.18)]"
-      role="dialog"
-      aria-live="polite"
-      aria-label="Datenschutz und Analytics-Einwilligung"
-    >
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="text-sm text-slate-800">
-          Wir messen Basis-Interaktionen nur nach deinem Einverständnis zur Verbesserung von
-          Conversion und Content.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onAccept}
-            className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-          >
-            Analytics erlauben
-          </button>
-          <button
-            type="button"
-            onClick={onReject}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold"
-          >
-            Nicht jetzt
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+export function AnalyticsProvider({ children, mode = getAnalyticsMode() }: { children: ReactNode; mode?: AnalyticsMode }) {
   const pathname = usePathname();
-  const isPublicScope = !pathname?.startsWith("/admin");
+  const publicScope = !pathname?.startsWith("/admin");
+  const key = mode === "new" ? WEBSITE_CONSENT_STORAGE_KEY : ANALYTICS_CONSENT_STORAGE_KEY;
   const [consent, setConsent] = useState<AnalyticsConsent>("pending");
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [queuedEvents, setQueuedEvents] = useState<QueuedPublicAnalyticsEvent[]>([]);
-  const lastPageViewPathRef = useRef<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [settings, setSettings] = useState(false);
+  const tracker = useRef<WebsiteAnalytics | null>(null);
+  const channel = useRef<BroadcastChannel | null>(null);
+  const current = useRef<AnalyticsConsent>("pending");
+  const lastLegacyPath = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !isPublicScope) {
-      return;
+  const applyConsent = useCallback((value: AnalyticsConsent) => {
+    if (value !== "granted") {
+      tracker.current?.stop(); tracker.current = null;
+      clearAnalyticsIdentity();
+      try { localStorage.removeItem(PUBLIC_VISITOR_ID_STORAGE_KEY); } catch {}
+      try { localStorage.removeItem(PUBLIC_VISITOR_AGE_STORAGE_KEY); } catch {}
+      lastLegacyPath.current = null;
     }
-
-    const storedValue = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
-    setConsent(normalizeConsentValue(storedValue));
-    setIsLoaded(true);
-  }, [isPublicScope]);
-
-  const requestConsent = useCallback((isAllowed: boolean) => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const nextState: AnalyticsConsent = isAllowed ? "granted" : "denied";
-    window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, nextState);
-    if (isAllowed) {
-      getOrCreatePublicVisitorId();
-    } else {
-      window.localStorage.removeItem(PUBLIC_VISITOR_ID_STORAGE_KEY);
-    }
-    setConsent(nextState);
+    current.current = value;
+    setConsent(value);
   }, []);
 
-  const flushEvents = useCallback(() => {
-    if (consent !== "granted") {
-      return;
-    }
+  useEffect(() => {
+    applyConsent(readConsent(key));
+    setLoaded(true);
+    const sync = () => applyConsent(readConsent(key));
+    const storage = (event: StorageEvent) => { if (event.key === key || event.key === null) sync(); };
+    window.addEventListener("storage", storage);
+    window.addEventListener("pageshow", sync);
+    window.addEventListener("focus", sync);
+    try {
+      const broadcast = new BroadcastChannel("deutschmit-analytics-consent");
+      channel.current = broadcast;
+      broadcast.onmessage = event => {
+        if (event.data?.key === key && ["granted", "denied"].includes(event.data?.value)) sync();
+      };
+    } catch {}
+    return () => {
+      window.removeEventListener("storage", storage); window.removeEventListener("pageshow", sync); window.removeEventListener("focus", sync);
+      channel.current?.close(); channel.current = null;
+    };
+  }, [key, applyConsent]);
 
-    setQueuedEvents((events) => {
-      events.forEach((queuedEvent) => {
-        dispatchTrackedEvent(queuedEvent.name, queuedEvent.payload, {
-          page_path: queuedEvent.page_path,
-          page_title: queuedEvent.page_title,
-          timestamp: queuedEvent.timestamp,
-        });
-      });
-      return [];
-    });
-  }, [consent]);
-
-  const trackEvent = useCallback(
-    (name: PublicAnalyticsEventName, payload: PublicAnalyticsPayload = {}) => {
-      if (consent === "pending") {
-        setQueuedEvents((events) => {
-          const context = getPageContext();
-          const nextEvent: QueuedPublicAnalyticsEvent = {
-            name,
-            payload,
-            timestamp: context.timestamp,
-            page_path: context.page_path,
-            page_title: context.page_title,
-          };
-
-          const mergedEvents = [...events, nextEvent];
-          if (mergedEvents.length <= MAX_QUEUED_EVENTS) {
-            return mergedEvents;
-          }
-
-          return mergedEvents.slice(mergedEvents.length - MAX_QUEUED_EVENTS);
-        });
-        return;
-      }
-
-      if (consent === "denied") {
-        return;
-      }
-
-      dispatchTrackedEvent(name, payload);
-    },
-    [consent],
-  );
+  const requestConsent = useCallback((allowed: boolean) => {
+    const value = allowed ? "granted" : "denied";
+    try {
+      localStorage.setItem(key, value);
+      if (!allowed) localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, "denied");
+    } catch {}
+    applyConsent(value);
+    channel.current?.postMessage({ key, value });
+    setSettings(false);
+  }, [key, applyConsent]);
 
   useEffect(() => {
-    if (consent === "denied") {
-      setQueuedEvents([]);
-    }
-
-    if (consent === "granted") {
-      flushEvents();
-    }
-  }, [consent, flushEvents]);
+    if (!loaded || !publicScope || consent !== "granted" || mode !== "new") return;
+    const runtime = new WebsiteAnalytics(() => current.current === "granted" && readConsent(key) === "granted" && !window.location.pathname.startsWith("/admin"));
+    tracker.current = runtime;
+    runtime.start();
+    return () => { runtime.stop(); if (tracker.current === runtime) tracker.current = null; };
+  }, [loaded, publicScope, consent, mode, key]);
 
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      !isPublicScope ||
-      !isLoaded ||
-      consent !== "granted"
-    ) {
-      return;
+    if (!publicScope || !loaded || consent !== "granted" || !pathname) return;
+    if (mode === "new") tracker.current?.navigate(pathname);
+    if (mode === "legacy" && lastLegacyPath.current !== pathname && readConsent(key) === "granted") {
+      lastLegacyPath.current = pathname;
+      sendWebsiteAnalyticsEvent({ eventType: "page_view", path: pathname });
     }
+  }, [pathname, publicScope, loaded, consent, mode, key]);
 
-    const pagePath = window.location.pathname || pathname || "/";
-    if (lastPageViewPathRef.current === pagePath) {
-      return;
-    }
+  const trackEvent = useCallback((name: PublicAnalyticsEventName, payload: PublicAnalyticsPayload = {}) => {
+    if (!publicScope || current.current !== "granted" || readConsent(key) !== "granted") return;
+    if (mode === "new") tracker.current?.track(name, payload);
+    const click = telegramClick(name, payload);
+    if (mode === "legacy" && click) sendWebsiteAnalyticsEvent({ eventType: "telegram_cta_click", metadata: { public_event_name: name, section: click.placement, cta: click.element_id, destination: click.destination } });
+  }, [publicScope, mode, key]);
+  const prepareFormSubmission = useCallback(async (form: AnalyticsFormId) => {
+    if (mode !== "new" || !publicScope || current.current !== "granted" || readConsent(key) !== "granted") return;
+    return tracker.current?.prepareFormSubmission(form);
+  }, [mode, publicScope, key]);
+  const value = useMemo(() => ({ consent, requestConsent, trackEvent, prepareFormSubmission, openSettings: () => setSettings(true) }), [consent, requestConsent, trackEvent, prepareFormSubmission]);
 
-    lastPageViewPathRef.current = pagePath;
-    sendWebsiteAnalyticsEvent({
-      eventType: "page_view",
-      path: pagePath,
-      timestamp: new Date().toISOString(),
-    });
-  }, [consent, isLoaded, isPublicScope, pathname]);
-
-  const value = useMemo(
-    () => ({
-      consent,
-      requestConsent,
-      trackEvent,
-    }),
-    [consent, requestConsent, trackEvent],
-  );
-
-  return (
-    <AnalyticsContext.Provider value={value}>
-      {children}
-      {isPublicScope && isLoaded && consent === "pending" ? (
-        <ConsentNotice
-          onAccept={() => requestConsent(true)}
-          onReject={() => requestConsent(false)}
-        />
-      ) : null}
-    </AnalyticsContext.Provider>
-  );
+  return <AnalyticsContext.Provider value={value}>
+    {children}
+    {publicScope && loaded && (settings || (consent === "pending" && mode !== "off")) ? <section
+      className="fixed inset-x-0 bottom-0 z-[80] bg-white p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.18)]"
+      role="dialog" aria-live="polite" aria-label="Datenschutz und Analytics-Einwilligung"
+    >
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-800">Nur mit deiner Einwilligung messen wir Seitenaufrufe, wichtige Klicks, ungefähre aktive Zeit sowie Quiz- und Anfrageergebnisse, ohne Formularinhalte. Du kannst deine Entscheidung hier jederzeit ändern. <a href="/privacy" className="underline">Datenschutz</a></p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => requestConsent(true)} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white">Analytics erlauben</button>
+          <button type="button" onClick={() => requestConsent(false)} className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold">{consent === "granted" ? "Einwilligung widerrufen" : "Analytics ablehnen"}</button>
+          {settings ? <button type="button" onClick={() => setSettings(false)} className="rounded-full border border-slate-300 px-4 py-2 text-xs">Schließen</button> : null}
+        </div>
+      </div>
+    </section> : null}
+  </AnalyticsContext.Provider>;
 }

@@ -2,9 +2,16 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { api } from "@/lib/api";
-import { apiRoutes } from "@/lib/api-routes";
-import { usePublicAnalytics } from "@/app/analytics-provider";
+import type { ContactAnalyticsContext } from "@/lib/analytics/contract";
+import { useContactAnalytics } from "./use-contact-analytics";
+import { submitContactRequest } from "@/lib/contact/contact-client";
+import {
+  partnerContactRequestSchema,
+  type PartnerOffering,
+  type PartnerStartTimeline,
+  type PartnerStudentCount,
+  type PartnerType,
+} from "@/lib/contact/contact-schema";
 
 import {
   ChoiceCards,
@@ -45,35 +52,35 @@ const PARTNER_COUNT_FIELD_ID = "partner-student-count";
 const PARTNER_OFFERINGS_FIELD_ID = "partner-offerings";
 const PARTNER_CONTACT_FIELD_ID = "partner-contact";
 
-const PARTNER_TYPE_OPTIONS: ChoiceOption[] = [
+const PARTNER_TYPE_OPTIONS = [
   { value: "tutor", label: "Privater Nachhilfelehrer", icon: "👩‍🏫" },
   { value: "school", label: "Sprachschule / Kurse", icon: "🏫" },
   { value: "platform", label: "Online-Plattform", icon: "📱" },
   { value: "creator", label: "Content Creator / Blogger", icon: "🎬" },
   { value: "other_org", label: "Andere Organisation", icon: "🏢" },
-];
+] satisfies Array<ChoiceOption & { value: PartnerType }>;
 
-const PARTNER_STUDENT_COUNT_OPTIONS: ChoiceOption[] = [
+const PARTNER_STUDENT_COUNT_OPTIONS = [
   { value: "bis_10", label: "Bis 10" },
   { value: "10_50", label: "10-50" },
   { value: "50_200", label: "50-200" },
   { value: "200_plus", label: "200+" },
   { value: "start", label: "Ich starte gerade" },
-];
+] satisfies Array<ChoiceOption & { value: PartnerStudentCount }>;
 
-const PARTNER_OFFERING_OPTIONS: ChoiceOption[] = [
+const PARTNER_OFFERING_OPTIONS = [
   { value: "teaching", label: "Ich kann Unterricht für Quiz Arena Lernende geben" },
   { value: "ads", label: "Ich möchte Werbung / Integration platzieren" },
   { value: "content", label: "Ich habe Content (Video/Artikel/Materialien)" },
   { value: "product", label: "Ich möchte ein gemeinsames Produkt/Projekt" },
   { value: "other", label: "Etwas anderes" },
-];
+] satisfies Array<ChoiceOption & { value: PartnerOffering }>;
 
-const PARTNER_TIMELINE_OPTIONS: ChoiceOption[] = [
+const PARTNER_TIMELINE_OPTIONS = [
   { value: "asap", label: "So schnell wie möglich" },
   { value: "month", label: "Innerhalb eines Monats" },
   { value: "explore", label: "Ich schaue mich erst um" },
-];
+] satisfies Array<ChoiceOption & { value: PartnerStartTimeline }>;
 
 const INITIAL_PARTNER_STATE: PartnerFormState = {
   name: "",
@@ -95,7 +102,8 @@ export function PartnerWizard({ onClose }: WizardProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorFieldId, setErrorFieldId] = useState<string | null>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
-  const { trackEvent } = usePublicAnalytics();
+  const analytics = useContactAnalytics("partner");
+  const submitting = useRef(false);
 
   useEffect(() => {
     if (!errorFieldId) return;
@@ -145,6 +153,7 @@ export function PartnerWizard({ onClose }: WizardProps) {
   function handleNext() {
     const validationError = validateCurrentStep(step);
     if (validationError) {
+      analytics.validationError();
       setErrorMessage(validationError.message);
       setErrorFieldId(validationError.fieldId);
       return;
@@ -162,20 +171,24 @@ export function PartnerWizard({ onClose }: WizardProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
 
     const validationError = validateCurrentStep(2);
     if (validationError) {
+      analytics.validationError();
       setErrorMessage(validationError.message);
       setErrorFieldId(validationError.fieldId);
       return;
     }
 
+    submitting.current = true;
     setSubmitState("loading");
     setErrorMessage(null);
     setErrorFieldId(null);
 
+    let context: ContactAnalyticsContext | undefined;
     try {
-      await api.post(apiRoutes.public.contact, {
+      const payload = partnerContactRequestSchema.parse({
         type: "partner",
         name: form.name.trim(),
         partnerType: form.partnerType,
@@ -188,19 +201,17 @@ export function PartnerWizard({ onClose }: WizardProps) {
         startTimeline: form.startTimeline,
         company: form.company,
       });
+      context = await analytics.submit();
+      await submitContactRequest(payload, context);
       setSubmitState("success");
-      trackEvent("lead_submit_success", {
-        wizard_type: "partner",
-        partner_type: form.partnerType,
-        country: Boolean(form.country.trim()),
-        offerings_count: form.offerings.length,
-        has_website: Boolean(form.website.trim()),
-        has_contact: Boolean(form.contact.trim()),
-      });
-    } catch {
+
+    } catch (error) {
+      analytics.submissionError(error, context);
       setSubmitState("error");
       setErrorMessage("Etwas ist schiefgelaufen. Bitte versuche es erneut.");
       setErrorFieldId(PARTNER_ERROR_ID);
+    } finally {
+      submitting.current = false;
     }
   }
 

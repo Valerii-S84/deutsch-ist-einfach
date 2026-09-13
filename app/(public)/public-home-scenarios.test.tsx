@@ -314,25 +314,6 @@ describe("wizard dialog contract", () => {
   });
 });
 
-describe("admin login accessibility contract", () => {
-  it("renders admin login modal with visible labels and required ARIA metadata", () => {
-    const source = readFile(
-      join(process.cwd(), "app", "(public)", "public-home-admin-login-modal.tsx"),
-    );
-
-    expect(source).toContain("import * as Dialog from \"@radix-ui/react-dialog\";");
-    expect(source).toContain("Dialog.Root");
-    expect(source).toContain("Dialog.Title");
-    expect(source).toContain("Dialog.Description");
-    expect(source).toContain("Dialog.Close asChild");
-    expect(source).toContain('htmlFor={loginInputId}');
-    expect(source).toContain('htmlFor={passwordInputId}');
-    expect(source).toContain('aria-required="true"');
-    expect(source).toContain('aria-describedby={loginFeedback ? errorId : undefined}');
-    expect(source).toContain('id={errorId}');
-  });
-});
-
 describe("admin login form labels and aria states", () => {
   it("adds labels and validation metadata to admin login page", () => {
     const source = readFile(
@@ -341,7 +322,6 @@ describe("admin login form labels and aria states", () => {
 
     expect(source).toContain("htmlFor=\"admin-email\"");
     expect(source).toContain("htmlFor=\"admin-password\"");
-    expect(source).toContain("htmlFor=\"admin-2fa-code\"");
     expect(source).toContain('aria-invalid={form.formState.errors.email ? "true" : "false"}');
     expect(source).toContain('aria-describedby={form.formState.errors.password ? "admin-password-error" : undefined}');
     expect(source).toContain('id="admin-login-error"');

@@ -17,6 +17,23 @@ afterEach(() => {
 });
 
 describe("quiz teaser proxy route", () => {
+  it("bounds a hanging Quiz Bank request and returns the existing unavailable response", async () => {
+    process.env.QUIZ_BANK_API_BASE_URL = "https://quiz-bank.example";
+    process.env.QUIZ_BANK_EDGE_API_KEY = "edge-secret";
+    process.env.QUIZ_BANK_CONSUMER_ID = "website";
+    process.env.QUIZ_BANK_CONSUMER_API_KEY = "consumer-secret";
+
+    vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+    }));
+    const startedAt = Date.now();
+    const response = await POST(new Request("http://localhost/api/quiz-teaser/next", { method: "POST" }));
+
+    expect(Date.now() - startedAt).toBeLessThan(6_500);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "quiz_teaser_unavailable" });
+  }, 8_000);
+
   it("fails closed when private Quiz Bank configuration is missing", async () => {
     const response = await POST(
       new Request("http://localhost/api/quiz-teaser/next", {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { analyticsAttributes } from "@/lib/analytics/elements";
 
 import { PublicLegalFooter } from "../_components/public-legal-footer";
 import { PublicSiteHeader } from "../_components/public-site-header";
@@ -77,6 +78,7 @@ const bookBenefits = [
 const formats = [
   {
     title: "Printausgabe",
+    analyticsId: "book_print",
     eyebrow: "120 Seiten · Taschenbuch",
     description:
       "Zum Markieren, Nachschlagen und Lernen ohne Bildschirm.",
@@ -85,6 +87,7 @@ const formats = [
   },
   {
     title: "Kindle-eBook",
+    analyticsId: "book_ebook",
     eyebrow: "Digital lesen",
     description:
       "Die digitale Ausgabe für Kindle-Geräte und die Kindle-App.",
@@ -204,6 +207,7 @@ export default function BooksPage() {
                   </p>
                   <a
                     href={format.href}
+                    {...analyticsAttributes(format.analyticsId, "books")}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`${format.cta} (öffnet in einem neuen Tab)`}

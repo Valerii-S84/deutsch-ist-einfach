@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { analyticsAttributes } from "@/lib/analytics/elements";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { usePublicAnalytics } from "@/app/analytics-provider";
@@ -19,10 +20,10 @@ type PublicSiteHeaderProps = {
 };
 
 const publicNavigation = [
-  { homeHref: "#projects", siteHref: "/projects", label: "Lernangebote" },
-  { homeHref: "#knowledge", siteHref: "/wissen", label: "Wissen & Tipps" },
-  { homeHref: "#unterricht", siteHref: "/contact#lernbegleitung", label: "Lernbegleitung" },
-  { homeHref: "/contact", siteHref: "/contact", label: "Kontakt" },
+  { homeHref: "#projects", siteHref: "/projects", id: "nav_projects", label: "Lernangebote" },
+  { homeHref: "#knowledge", siteHref: "/wissen", id: "nav_wissen", label: "Wissen & Tipps" },
+  { homeHref: "#unterricht", siteHref: "/contact#lernbegleitung", id: "nav_learning", label: "Lernbegleitung" },
+  { homeHref: "/contact", siteHref: "/contact", id: "nav_contact", label: "Kontakt" },
 ];
 
 const LINK_FOCUS_CLASS =
@@ -89,11 +90,11 @@ export function PublicSiteHeader({
     };
   }, [isMobileMenuOpen]);
 
-  const trackHeaderCta = () =>
+  const trackHeaderCta = (placement = "header") =>
     trackEvent("hero_cta_click", {
-      section: "header",
+      section: placement,
       cta: "telegram_bot",
-      destination: headerCtaUrl,
+      destination: "telegram",
     });
 
   return (
@@ -104,6 +105,7 @@ export function PublicSiteHeader({
       <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-3 sm:px-6 lg:h-auto lg:gap-3 lg:py-3">
         <Link
           href="/"
+          {...analyticsAttributes("nav_home", "header")}
           className={`flex min-w-0 items-center gap-3 rounded-xl lg:rounded-2xl ${LINK_FOCUS_CLASS}`}
           onClick={() => setIsMobileMenuOpen(false)}
         >
@@ -126,6 +128,7 @@ export function PublicSiteHeader({
 
         <button
           ref={menuButtonRef}
+          {...analyticsAttributes("nav_menu", "header_mobile")}
           type="button"
           className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-white transition hover:border-white/25 hover:bg-white/[0.1] lg:hidden ${LINK_FOCUS_CLASS}`}
           aria-label={isMobileMenuOpen ? "Menü schließen" : "Menü öffnen"}
@@ -161,6 +164,7 @@ export function PublicSiteHeader({
               <a
                 key={item.homeHref}
                 href={sectionLinkPrefix ? item.siteHref : item.homeHref}
+                {...analyticsAttributes(item.id, "header")}
                 className={`rounded-full border border-transparent px-3 py-2 transition hover:border-white/10 hover:bg-white/[0.06] hover:text-white ${LINK_FOCUS_CLASS}`}
               >
                 {item.label}
@@ -169,10 +173,11 @@ export function PublicSiteHeader({
           </nav>
           <a
             href={headerCtaUrl}
+            {...analyticsAttributes("telegram_bot", "header", true)}
             target="_blank"
             rel="noreferrer"
             className={`inline-flex min-h-11 items-center justify-center rounded-full bg-[#2AABEE] px-4 py-2 text-center text-sm font-semibold leading-snug text-white shadow-[0_12px_26px_rgba(42,171,238,0.28)] transition hover:bg-[#169bdc] ${LINK_FOCUS_CLASS}`}
-            onClick={trackHeaderCta}
+            onClick={() => trackHeaderCta()}
           >
             Quiz-Bot öffnen
           </a>
@@ -189,6 +194,7 @@ export function PublicSiteHeader({
               <a
                 key={item.homeHref}
                 href={sectionLinkPrefix ? item.siteHref : item.homeHref}
+                {...analyticsAttributes(item.id, "header_mobile")}
                 className={`flex min-h-11 items-center rounded-xl px-3 py-2.5 transition hover:bg-white/[0.07] hover:text-white ${LINK_FOCUS_CLASS}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -198,12 +204,13 @@ export function PublicSiteHeader({
           </nav>
           <a
             href={headerCtaUrl}
+            {...analyticsAttributes("telegram_bot", "header_mobile", true)}
             target="_blank"
             rel="noreferrer"
             className={`mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#2AABEE] px-4 py-2 text-center text-sm font-semibold leading-snug text-white shadow-[0_12px_26px_rgba(42,171,238,0.24)] transition hover:bg-[#169bdc] ${LINK_FOCUS_CLASS}`}
             onClick={() => {
               setIsMobileMenuOpen(false);
-              trackHeaderCta();
+              trackHeaderCta("header_mobile");
             }}
           >
             Quiz-Bot öffnen

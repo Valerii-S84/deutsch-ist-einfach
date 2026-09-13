@@ -1,4 +1,6 @@
 node_modules/
+.verification/
+.docker-test-config/
 .next/
 coverage/
 dist/
@@ -14,7 +16,6 @@ Thumbs.db
 
 .env
 .env.*
-!.env.example
 
 npm-debug.log*
 yarn-debug.log*

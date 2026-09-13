@@ -1,6 +1,6 @@
 "use client";
 
-import type { WebsiteAnalyticsOverviewData } from "./dashboard-types";
+import type { WebsiteAnalyticsOverviewData } from "@/lib/site-analytics-contract";
 
 type DashboardWebsiteAnalyticsSectionProps = {
   data: WebsiteAnalyticsOverviewData | undefined;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { analyticsAttributes } from "@/lib/analytics/elements";
 import { notFound } from "next/navigation";
 import {
   prepareArticleContentForNavigation,
@@ -500,6 +501,7 @@ function RelatedArticles({ currentSlug }: { currentSlug: string }) {
           <Link
             key={relatedArticle.slug}
             href={`/artikel/${relatedArticle.slug}`}
+            {...analyticsAttributes(`article_${relatedArticle.slug}`, "related_articles")}
             className="group flex min-w-0 flex-col rounded-2xl border border-white/10 bg-slate-950/45 p-5 transition hover:-translate-y-0.5 hover:border-amber-300/35 hover:bg-slate-950/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
           >
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-300">
@@ -677,6 +679,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               />
               <div
                 className={`${ARTICLE_DOCUMENT_CLASS} min-w-0 rounded-[28px]`}
+                data-analytics-content data-analytics-article={slug}
                 dangerouslySetInnerHTML={{
                   __html: navigableArticle.content,
                 }}

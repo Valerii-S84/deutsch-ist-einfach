@@ -256,6 +256,7 @@ export async function POST(request: Request) {
         theme_ids: QUIZ_BANK_TEASER_THEME_IDS,
       }),
       cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
     });
 
     if (upstreamResponse.status === 429) {

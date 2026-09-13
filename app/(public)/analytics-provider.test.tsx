@@ -1,718 +1,113 @@
 /* @vitest-environment jsdom */
-
-import { type ReactElement } from "react";
-import { act } from "react";
-import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
-
+import { act, StrictMode } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AnalyticsProvider, usePublicAnalytics } from "@/app/analytics-provider";
+import { AnalyticsSettingsButton } from "@/app/analytics-settings-button";
+import { ANALYTICS_CONSENT_STORAGE_KEY, WEBSITE_CONSENT_STORAGE_KEY, PUBLIC_VISITOR_ID_STORAGE_KEY, PUBLIC_VISITOR_AGE_STORAGE_KEY, type AnalyticsMode } from "@/lib/analytics";
+import { SESSION_KEY, VISITOR_KEY } from "@/lib/analytics/identity";
 
-type AnalyticsWindowShape = {
-  __quizArenaPublicAnalytics: Array<Record<string, unknown>>;
-  dataLayer: Array<Record<string, unknown>>;
-};
-
-type FetchSpy = ReturnType<typeof vi.fn>;
-
-declare global {
-  interface Window {
-    __quizArenaPublicAnalytics?: Array<Record<string, unknown>>;
-    dataLayer?: Array<Record<string, unknown>>;
-  }
-}
-
-const windowAnalytics = (): AnalyticsWindowShape => {
-  const analyticsWindow = window as Window & AnalyticsWindowShape;
-  analyticsWindow.__quizArenaPublicAnalytics = analyticsWindow.__quizArenaPublicAnalytics ?? [];
-  analyticsWindow.dataLayer = analyticsWindow.dataLayer ?? [];
-  return analyticsWindow;
-};
-
-const mockUsePathname = vi.fn();
-const CONSENT_STORAGE_KEY = "quiz_arena_public_analytics_consent_v1";
-const VISITOR_ID_STORAGE_KEY = "quiz_arena_public_visitor_id_v1";
-
-vi.mock("next/navigation", () => ({
-  usePathname: () => mockUsePathname(),
-}));
-
-function renderInContainer(ui: ReactElement) {
-  const container = document.createElement("div");
-  document.body.append(container);
-  const root = createRoot(container);
-
-  act(() => {
-    root.render(ui);
-  });
-
-  return {
-    container,
-    cleanup: () => {
-      act(() => {
-        root.unmount();
-      });
-      container.remove();
-    },
-  };
-}
-
-function AnalyticsProbe() {
+let pathname = "/";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+let root: Root;
+let container: HTMLDivElement;
+const fetchSpy = vi.fn();
+const beacon = vi.fn((_url: string, _body: Blob) => true);
+function Probe() {
   const { trackEvent } = usePublicAnalytics();
-
-  return <button type="button" onClick={() => trackEvent("hero_cta_click", { source: "probe" })}>track</button>;
+  return <><button onClick={() => trackEvent("hero_cta_click", { cta: "telegram_bot", section: "hero", destination: "https://t.me/example?private=secret" })}>Telegram probe</button><AnalyticsSettingsButton /></>;
 }
-
-function TelegramCtaProbe() {
-  const { trackEvent } = usePublicAnalytics();
-
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        trackEvent("hero_cta_click", {
-          section: "hero",
-          cta: "telegram_bot",
-          destination: "https://t.me/deutsch_quiz_arena",
-        })
-      }
-    >
-      telegram cta
-    </button>
-  );
+async function mount(mode: AnalyticsMode = "new") {
+  await act(async () => { root.render(<StrictMode><AnalyticsProvider mode={mode}><Probe /></AnalyticsProvider></StrictMode>); });
 }
-
-function disableSendBeacon() {
-  Object.defineProperty(window.navigator, "sendBeacon", {
-    configurable: true,
-    value: undefined,
-  });
+async function click(text: string) {
+  const button = [...container.querySelectorAll("button")].find(node => node.textContent === text);
+  expect(button, text).toBeDefined();
+  await act(async () => button!.click());
 }
-
-function installFetchSpy(): FetchSpy {
-  disableSendBeacon();
-  const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-  vi.stubGlobal("fetch", fetchSpy);
-  return fetchSpy;
-}
-
-async function flushEffects() {
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
-}
-
-function fetchPayloads(fetchSpy: FetchSpy): Array<Record<string, unknown>> {
-  return fetchSpy.mock.calls.map((call) => {
-    const [, options] = call as [string, { body: string }];
-    return JSON.parse(options.body) as Record<string, unknown>;
-  });
-}
-
-afterEach(() => {
-  document.body.innerHTML = "";
-  document.title = "";
-  const analyticsWindow = windowAnalytics();
-  analyticsWindow.__quizArenaPublicAnalytics = [];
-  analyticsWindow.dataLayer = [];
-  window.localStorage.removeItem(CONSENT_STORAGE_KEY);
-  window.localStorage.removeItem(VISITOR_ID_STORAGE_KEY);
-  mockUsePathname.mockReset();
-  mockUsePathname.mockReturnValue("/");
-  vi.unstubAllGlobals();
-  vi.clearAllMocks();
+const events = () => fetchSpy.mock.calls.flatMap(([, request]) => JSON.parse(request.body).events ?? []);
+beforeEach(() => {
+  vi.useFakeTimers(); pathname = "/"; localStorage.clear(); sessionStorage.clear();
+  vi.stubGlobal("BroadcastChannel", undefined);
+  vi.stubGlobal("fetch", fetchSpy.mockReset().mockImplementation(async (_url, request) => {
+    const count = JSON.parse(request.body).events?.length ?? 1;
+    return new Response(JSON.stringify({ accepted: count, inserted: count, duplicates: 0 }));
+  }));
+  Object.defineProperty(navigator, "sendBeacon", { configurable: true, value: beacon.mockClear() });
+  vi.spyOn(document, "hasFocus").mockReturnValue(true);
+  vi.spyOn(performance, "getEntriesByType").mockReturnValue([]);
+  container = document.createElement("div"); document.body.append(container); root = createRoot(container);
 });
+afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
-function QueueProbe({ count }: { count: number }) {
-  const { trackEvent } = usePublicAnalytics();
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        for (let i = 0; i < count; i += 1) {
-          trackEvent("hero_cta_click", { sequence: i });
-        }
-      }}
-    >
-      track many
-    </button>
-  );
-}
-
-function ContextTrackingProbe() {
-  const { trackEvent } = usePublicAnalytics();
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => trackEvent("hero_cta_click", { marker: "first" })}
-      >
-        track first
-      </button>
-      <button
-        type="button"
-        onClick={() => trackEvent("hero_cta_click", { marker: "second" })}
-      >
-        track second
-      </button>
-    </div>
-  );
-}
-
-function DuplicateMarkerProbe() {
-  const { trackEvent } = usePublicAnalytics();
-
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => trackEvent("hero_cta_click", { marker: "duplicate", sequence: 1 })}
-      >
-        track duplicate 1
-      </button>
-      <button
-        type="button"
-        onClick={() => trackEvent("hero_cta_click", { marker: "duplicate", sequence: 2 })}
-      >
-        track duplicate 2
-      </button>
-    </div>
-  );
-}
-
-describe("public analytics consent and event queue", () => {
-  it("does not send backend analytics when stored consent is denied", async () => {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, "denied");
-    const fetchSpy = installFetchSpy();
-
-    const { cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <AnalyticsProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      await flushEffects();
-
-      expect(fetchSpy).not.toHaveBeenCalled();
-      expect(window.localStorage.getItem(VISITOR_ID_STORAGE_KEY)).toBeNull();
-    } finally {
-      cleanup();
-    }
+describe("consent-gated browser analytics", () => {
+  it("collects no IDs or queued actions before grant, then sends only the current view and a new click", async () => {
+    await mount(); await click("Telegram probe");
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+    expect(localStorage.getItem(VISITOR_KEY)).toBeNull(); expect(sessionStorage.getItem(SESSION_KEY)).toBeNull(); expect(fetchSpy).not.toHaveBeenCalled();
+    await click("Analytics erlauben"); await click("Telegram probe");
+    expect(events().map(event => event.event_name)).toEqual(["session_start", "page_view", "element_click"]);
+    expect(new Set(events().map(event => event.session_id)).size).toBe(1);
+    expect(JSON.stringify(events())).not.toMatch(/private|secret|https:|page_title/);
+    expect(fetchSpy.mock.calls.every(([url]) => url === "/api/public/analytics/events")).toBe(true);
   });
-
-  it("sends a backend page_view when stored consent is granted", async () => {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, "granted");
-    window.history.pushState({}, "", "/projects?utm_source=ads&utm_medium=cpc&utm_campaign=summer");
-    mockUsePathname.mockReturnValue("/projects");
-    const fetchSpy = installFetchSpy();
-
-    const { cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <AnalyticsProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      await flushEffects();
-
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
-      const [url, options] = fetchSpy.mock.calls[0] as [
-        string,
-        { body: string; keepalive: boolean; credentials: string },
-      ];
-      expect(url).toBe("/api/public/website-analytics/events");
-      expect(options.keepalive).toBe(true);
-      expect(options.credentials).toBe("omit");
-
-      const payload = JSON.parse(options.body) as Record<string, unknown>;
-      expect(payload).toMatchObject({
-        event_type: "page_view",
-        path: "/projects",
-        utm_source: "ads",
-        utm_medium: "cpc",
-        utm_campaign: "summer",
-      });
-      expect(typeof payload.visitor_id).toBe("string");
-      expect(window.localStorage.getItem(VISITOR_ID_STORAGE_KEY)).toBe(payload.visitor_id);
-    } finally {
-      cleanup();
-    }
+  it("deny and revoke stop collection, delete IDs and discard unsent events; regrant is a new visitor", async () => {
+    await mount(); await click("Analytics ablehnen"); await click("Telegram probe");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    await click("Analytics-Einstellungen"); await click("Analytics erlauben");
+    const visitor = localStorage.getItem(VISITOR_KEY);
+    await click("Analytics-Einstellungen"); await click("Einwilligung widerrufen");
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(fetchSpy).not.toHaveBeenCalled(); expect(localStorage.getItem(VISITOR_KEY)).toBeNull(); expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
+    await click("Analytics-Einstellungen"); await click("Analytics erlauben"); await click("Telegram probe");
+    expect(localStorage.getItem(VISITOR_KEY)).not.toBe(visitor); expect(events()).toHaveLength(3);
   });
-
-  it("sends backend analytics for Telegram CTA clicks after granted consent", async () => {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, "granted");
-    const fetchSpy = installFetchSpy();
-
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <TelegramCtaProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      await flushEffects();
-      fetchSpy.mockClear();
-
-      const trackButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "telegram cta",
-      );
-      expect(trackButton).not.toBeNull();
-
-      act(() => {
-        trackButton?.click();
-      });
-
-      await flushEffects();
-
-      const payloads = fetchPayloads(fetchSpy);
-      expect(payloads).toHaveLength(1);
-      expect(payloads[0]).toMatchObject({
-        event_type: "telegram_cta_click",
-        path: window.location.pathname,
-        metadata: {
-          public_event_name: "hero_cta_click",
-          section: "hero",
-          cta: "telegram_bot",
-          destination: "https://t.me/deutsch_quiz_arena",
-        },
-      });
-    } finally {
-      cleanup();
-    }
+  it("receives cross-tab revoke synchronously and cancels pending retries", async () => {
+    localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, "granted"); await mount();
+    fetchSpy.mockResolvedValue(new Response(null, { status: 503 }));
+    await click("Telegram probe");
+    await act(async () => {
+      localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, "denied");
+      window.dispatchEvent(new StorageEvent("storage", { key: WEBSITE_CONSENT_STORAGE_KEY, newValue: "denied" }));
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1); expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
   });
-
-  it("flushes queued Telegram CTA events to backend after accepting consent", async () => {
-    const fetchSpy = installFetchSpy();
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <TelegramCtaProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      const trackButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "telegram cta",
-      );
-      expect(trackButton).not.toBeNull();
-
-      act(() => {
-        trackButton?.click();
-      });
-
-      expect(fetchSpy).not.toHaveBeenCalled();
-
-      const acceptButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Analytics erlauben",
-      );
-      expect(acceptButton).not.toBeNull();
-
-      act(() => {
-        acceptButton?.click();
-      });
-
-      await flushEffects();
-
-      const payloads = fetchPayloads(fetchSpy);
-      expect(payloads.some((payload) => payload.event_type === "telegram_cta_click")).toBe(true);
-      expect(payloads.some((payload) => payload.event_type === "page_view")).toBe(true);
-    } finally {
-      cleanup();
-    }
+  it("does not duplicate StrictMode mount, same-path rerender, visibility, or hash changes", async () => {
+    localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, "granted"); await mount(); await mount();
+    await act(async () => { window.dispatchEvent(new Event("hashchange")); document.dispatchEvent(new Event("visibilitychange")); });
+    await click("Telegram probe");
+    expect(events().filter(event => event.event_name === "page_view")).toHaveLength(1);
+    pathname = "/wissen"; await mount(); pathname = "/"; await mount(); await click("Telegram probe");
+    expect(events().filter(event => event.event_name === "page_view").map(event => event.path)).toEqual(["/", "/wissen", "/"]);
   });
-
-  it("tracks events instantly when consent is already granted before mount", async () => {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, "granted");
-
-    const receivedEvents: Array<Record<string, unknown>> = [];
-    const onAnalyticsEvent = (event: Event) => {
-      receivedEvents.push((event as CustomEvent).detail as Record<string, unknown>);
-    };
-    window.addEventListener("quiz-arena-analytics-event", onAnalyticsEvent);
-
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <AnalyticsProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      const trackButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track",
-      );
-      expect(trackButton).not.toBeNull();
-
-      act(() => {
-        trackButton?.click();
-      });
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      const consentNotice = container.querySelector('[aria-label="Datenschutz und Analytics-Einwilligung"]');
-      expect(consentNotice).toBeNull();
-
-      const analyticsWindow = windowAnalytics();
-      expect(analyticsWindow.__quizArenaPublicAnalytics).toHaveLength(1);
-      expect(analyticsWindow.__quizArenaPublicAnalytics?.[0]).toMatchObject({
-        event_name: "hero_cta_click",
-        event_category: "public",
-      });
-      expect(receivedEvents).toHaveLength(1);
-      expect(receivedEvents[0]).toMatchObject({
-        event_name: "hero_cta_click",
-        event_category: "public",
-        source: "probe",
-      });
-    } finally {
-      window.removeEventListener("quiz-arena-analytics-event", onAnalyticsEvent);
-      cleanup();
-    }
+  it("blocked storage cannot break rendering, consent controls or interactions", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
+    await mount(); await click("Analytics erlauben"); await click("Telegram probe");
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+    expect(fetchSpy).not.toHaveBeenCalled(); expect(container.textContent).toContain("Telegram probe");
   });
-
-  it("queues event while consent is pending and flushes after accepting", async () => {
-    mockUsePathname.mockReturnValue("/");
-    window.history.pushState({}, "", "/");
-    document.title = "Homepage";
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <AnalyticsProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      const trackButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track",
-      );
-      expect(trackButton).not.toBeNull();
-      act(() => {
-        trackButton?.click();
-      });
-
-      expect(window.__quizArenaPublicAnalytics).toHaveLength(0);
-      expect(window.localStorage.getItem(CONSENT_STORAGE_KEY)).toBeNull();
-
-      window.history.pushState({}, "", "/contact");
-      document.title = "Kontakt";
-
-      const acceptButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Analytics erlauben",
-      );
-      expect(acceptButton).not.toBeNull();
-
-      act(() => {
-        acceptButton?.click();
-      });
-
-      expect(window.localStorage.getItem(CONSENT_STORAGE_KEY)).toBe("granted");
-
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      const analyticsWindow = windowAnalytics();
-      expect(analyticsWindow.__quizArenaPublicAnalytics).toHaveLength(1);
-      expect(analyticsWindow.__quizArenaPublicAnalytics?.[0]?.event_name).toBe("hero_cta_click");
-      expect(analyticsWindow.__quizArenaPublicAnalytics?.[0]?.source).toBe("probe");
-      expect((analyticsWindow.__quizArenaPublicAnalytics?.[0] as { page_path: string }).page_path).toBe("/");
-      expect(
-        (analyticsWindow.__quizArenaPublicAnalytics?.[0] as { page_title: string }).page_title,
-      ).toBe("Homepage");
-    } finally {
-      cleanup();
-    }
+  it.each(["new", "legacy", "off"] as const)("collects no Admin actions in mode %s", async mode => {
+    localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, "granted"); localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, "granted");
+    pathname = "/admin/dashboard"; await mount(mode); await click("Telegram probe");
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+    expect(fetchSpy).not.toHaveBeenCalled(); expect(beacon).not.toHaveBeenCalled(); expect(localStorage.getItem(VISITOR_KEY)).toBeNull();
   });
-
-  it("keeps events dropped when user denied analytics consent", async () => {
-    mockUsePathname.mockReturnValue("/");
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <AnalyticsProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      const trackButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track",
-      );
-      expect(trackButton).not.toBeNull();
-      act(() => {
-        trackButton?.click();
-      });
-
-      const rejectButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Nicht jetzt",
-      );
-      expect(rejectButton).not.toBeNull();
-
-      act(() => {
-        rejectButton?.click();
-      });
-
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      expect(window.localStorage.getItem(CONSENT_STORAGE_KEY)).toBe("denied");
-      const deniedAnalyticsWindow = windowAnalytics();
-      expect(deniedAnalyticsWindow.__quizArenaPublicAnalytics).toHaveLength(0);
-
-      const consentNotice = container.querySelector('[aria-label="Datenschutz und Analytics-Einwilligung"]');
-      expect(consentNotice).toBeNull();
-    } finally {
-      cleanup();
-    }
+  it("legacy has only the old destination and off has no collection", async () => {
+    localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, "granted"); await mount("legacy"); await click("Telegram probe");
+    expect(beacon).toHaveBeenCalledTimes(2); expect(beacon.mock.calls.every(([url]) => url === "/api/public/website-analytics/events")).toBe(true);
+    await mount("off"); await click("Telegram probe");
+    expect(beacon).toHaveBeenCalledTimes(2); expect(fetchSpy).not.toHaveBeenCalled();
   });
-
-  it("does not collapse multiple queued events with same marker", async () => {
-    mockUsePathname.mockReturnValue("/");
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <DuplicateMarkerProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      window.history.pushState({}, "", "/");
-      document.title = "Homepage";
-
-      const firstButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track duplicate 1",
-      );
-      const secondButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track duplicate 2",
-      );
-      expect(firstButton).not.toBeNull();
-      expect(secondButton).not.toBeNull();
-
-      act(() => {
-        firstButton?.click();
-      });
-
-      window.history.pushState({}, "", "/projects");
-      document.title = "Projects";
-
-      act(() => {
-        secondButton?.click();
-      });
-
-      const duplicates = window.__quizArenaPublicAnalytics ?? [];
-      expect(duplicates).toHaveLength(0);
-
-      const acceptButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Analytics erlauben",
-      );
-      expect(acceptButton).not.toBeNull();
-
-      act(() => {
-        acceptButton?.click();
-      });
-
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      const analyticsWindow = windowAnalytics();
-      const duplicatedEvents = analyticsWindow.__quizArenaPublicAnalytics.filter(
-        (event) => event.marker === "duplicate",
-      ) as Array<{ page_path: string; page_title: string; sequence: number }>;
-
-      expect(duplicatedEvents).toHaveLength(2);
-      expect(duplicatedEvents?.[0]?.sequence).toBe(1);
-      expect(duplicatedEvents?.[1]?.sequence).toBe(2);
-      expect(duplicatedEvents?.[0]).toMatchObject({ page_path: "/", page_title: "Homepage" });
-      expect(duplicatedEvents?.[1]).toMatchObject({
-        page_path: "/projects",
-        page_title: "Projects",
-      });
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("preserves per-event page context when multiple pending events are queued across routes", async () => {
-    mockUsePathname.mockReturnValue("/");
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <ContextTrackingProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      window.history.pushState({}, "", "/");
-      document.title = "Homepage";
-
-      const firstButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track first",
-      );
-      const secondButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track second",
-      );
-      expect(firstButton).not.toBeNull();
-      expect(secondButton).not.toBeNull();
-
-      act(() => {
-        firstButton?.click();
-      });
-
-      window.history.pushState({}, "", "/projects");
-      document.title = "Projects";
-
-      act(() => {
-        secondButton?.click();
-      });
-
-      const acceptButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Analytics erlauben",
-      );
-      expect(acceptButton).not.toBeNull();
-
-      act(() => {
-        acceptButton?.click();
-      });
-
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      const analyticsWindow = windowAnalytics();
-      expect(analyticsWindow.__quizArenaPublicAnalytics).toHaveLength(2);
-
-      const firstEvent = analyticsWindow.__quizArenaPublicAnalytics.find(
-        (event) => event.marker === "first",
-      ) as { page_path: string; page_title: string };
-      const secondEvent = analyticsWindow.__quizArenaPublicAnalytics.find(
-        (event) => event.marker === "second",
-      ) as { page_path: string; page_title: string };
-
-      expect(firstEvent).toMatchObject({ page_path: "/", page_title: "Homepage" });
-      expect(secondEvent).toMatchObject({ page_path: "/projects", page_title: "Projects" });
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("stores event timestamps at capture time while consent is pending", async () => {
-    vi.useFakeTimers();
-    const firstTimestamp = new Date("2026-04-27T10:00:00.000Z");
-    const secondTimestamp = new Date("2026-04-27T10:00:10.000Z");
-    const flushTimestamp = new Date("2026-04-27T10:05:00.000Z");
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <ContextTrackingProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      mockUsePathname.mockReturnValue("/");
-      const firstButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track first",
-      );
-      const secondButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track second",
-      );
-
-      expect(firstButton).not.toBeNull();
-      expect(secondButton).not.toBeNull();
-
-      vi.setSystemTime(firstTimestamp);
-      window.history.pushState({}, "", "/");
-      document.title = "Homepage";
-      act(() => {
-        firstButton?.click();
-      });
-
-      vi.setSystemTime(secondTimestamp);
-      window.history.pushState({}, "", "/projects");
-      document.title = "Projects";
-      act(() => {
-        secondButton?.click();
-      });
-
-      vi.setSystemTime(flushTimestamp);
-      const acceptButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Analytics erlauben",
-      );
-      expect(acceptButton).not.toBeNull();
-      act(() => {
-        acceptButton?.click();
-      });
-
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      const analyticsWindow = windowAnalytics();
-      const firstEvent = analyticsWindow.__quizArenaPublicAnalytics.find(
-        (event) => event.marker === "first",
-      ) as { timestamp: string };
-      const secondEvent = analyticsWindow.__quizArenaPublicAnalytics.find(
-        (event) => event.marker === "second",
-      ) as { timestamp: string };
-
-      expect(firstEvent.timestamp).toBe(firstTimestamp.toISOString());
-      expect(secondEvent.timestamp).toBe(secondTimestamp.toISOString());
-    } finally {
-      vi.useRealTimers();
-      cleanup();
-    }
-  });
-
-  it("caps queued events to MAX_QUEUED_EVENTS and flushes only the latest events", async () => {
-    mockUsePathname.mockReturnValue("/");
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <QueueProbe count={50} />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      const trackManyButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "track many",
-      );
-      expect(trackManyButton).not.toBeNull();
-
-      act(() => {
-        trackManyButton?.click();
-      });
-
-      const acceptButton = Array.from(container.querySelectorAll("button")).find(
-        (button) => button.textContent === "Analytics erlauben",
-      );
-      expect(acceptButton).not.toBeNull();
-
-      act(() => {
-        acceptButton?.click();
-      });
-
-      await act(async () => {
-        await Promise.resolve();
-      });
-
-      const analyticsWindow = windowAnalytics();
-      expect(analyticsWindow.__quizArenaPublicAnalytics).toHaveLength(40);
-      expect(analyticsWindow.__quizArenaPublicAnalytics?.[0]?.sequence).toBe(10);
-      expect(analyticsWindow.__quizArenaPublicAnalytics?.[39]?.sequence).toBe(49);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("does not display consent notice on admin routes", () => {
-    mockUsePathname.mockReturnValue("/admin/dashboard");
-    const { container, cleanup } = renderInContainer(
-      <AnalyticsProvider>
-        <AnalyticsProbe />
-      </AnalyticsProvider>,
-    );
-
-    try {
-      const consentNotice = container.querySelector('[aria-label="Datenschutz und Analytics-Einwilligung"]');
-      expect(consentNotice).toBeNull();
-    } finally {
-      cleanup();
-    }
+  it("legacy revoke clears the ID and its age; regrant starts a new visitor", async () => {
+    localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, "granted"); await mount("legacy");
+    const first = localStorage.getItem(PUBLIC_VISITOR_ID_STORAGE_KEY); expect(first).not.toBeNull();
+    expect(localStorage.getItem(PUBLIC_VISITOR_AGE_STORAGE_KEY)).not.toBeNull();
+    await click("Analytics-Einstellungen"); await click("Einwilligung widerrufen");
+    expect(localStorage.getItem(PUBLIC_VISITOR_ID_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(PUBLIC_VISITOR_AGE_STORAGE_KEY)).toBeNull();
+    await click("Analytics-Einstellungen"); await click("Analytics erlauben");
+    expect(localStorage.getItem(PUBLIC_VISITOR_ID_STORAGE_KEY)).not.toBe(first);
   });
 });

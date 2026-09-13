@@ -25,14 +25,6 @@ export function buildTrackedTelegramBotUrl(baseUrl: string, startPayload: string
   }
 }
 
-export function createInitialStatsState(): StatsState {
-  return {
-    users: null,
-    quizzes: null,
-    isUnavailable: false,
-  };
-}
-
 export function createUnavailableStatsState(): StatsState {
   return {
     users: null,

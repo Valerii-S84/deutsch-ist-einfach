@@ -89,13 +89,12 @@ export function ArticleInteractions({ articleSlug, defaultOpenSectionId }: Artic
     );
     const disclosureCleanups: Array<() => void> = [];
 
-    const trackQuizCta = (event: Event) => {
-      const cta = event.currentTarget as HTMLAnchorElement;
+    const trackQuizCta = () => {
       trackEvent("hero_cta_click", {
         article_slug: articleSlug,
         section: "article_kurzantwort",
         cta: "telegram_bot",
-        destination: cta.href,
+        destination: "telegram",
       });
     };
 
@@ -178,7 +177,12 @@ export function ArticleInteractions({ articleSlug, defaultOpenSectionId }: Artic
     window.addEventListener("hashchange", revealLocationHash);
     revealLocationHash();
 
-    quizCtas.forEach((cta) => cta.addEventListener("click", trackQuizCta));
+    quizCtas.forEach((cta) => {
+      cta.dataset.analyticsId = "telegram_bot";
+      cta.dataset.analyticsPlacement = "article_kurzantwort";
+      cta.dataset.analyticsExplicit = "true";
+      cta.addEventListener("click", trackQuizCta);
+    });
 
     return () => {
       quizCtas.forEach((cta) => cta.removeEventListener("click", trackQuizCta));

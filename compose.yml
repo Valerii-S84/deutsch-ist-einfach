@@ -1,0 +1,133 @@
+name: deutsch-ist-einfach
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: site_user
+      POSTGRES_DB: deutschmit_site
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - site_db:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # TCP is unavailable during first-run initialization. Check both site tables
+      # too, so a failed initialization cannot expose a partially migrated site.
+      test:
+        - CMD-SHELL
+        - >-
+          PGPASSWORD="$$POSTGRES_PASSWORD" psql -h 127.0.0.1
+          -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v ON_ERROR_STOP=1
+          -tAc "SELECT 'contact_requests'::regclass, 'website_analytics_events'::regclass"
+          > /dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  site:
+    build:
+      context: .
+      target: production
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://localhost}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-info@deutschmit.de}
+        NEXT_PUBLIC_TELEGRAM_BOT_URL: ${NEXT_PUBLIC_TELEGRAM_BOT_URL:-https://t.me/Deine_Deutsch_Quiz_bot}
+        NEXT_PUBLIC_TELEGRAM_CHANNEL_URL: ${NEXT_PUBLIC_TELEGRAM_CHANNEL_URL:-https://t.me/doechkurse}
+        NEXT_PUBLIC_DEUTSCH_TRAINER_BOT_URL: ${NEXT_PUBLIC_DEUTSCH_TRAINER_BOT_URL:-https://t.me/Trainer1512_bot}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        NEXT_PUBLIC_WEBSITE_ANALYTICS_MODE: ${NEXT_PUBLIC_WEBSITE_ANALYTICS_MODE:-off}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://site_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/deutschmit_site}
+      SITE_ADMIN_EMAIL: ${SITE_ADMIN_EMAIL:?Set SITE_ADMIN_EMAIL in .env}
+      SITE_ADMIN_PASSWORD: ${SITE_ADMIN_PASSWORD:?Set SITE_ADMIN_PASSWORD in .env (at least 12 characters)}
+      SITE_ADMIN_SESSION_SECRET: ${SITE_ADMIN_SESSION_SECRET:?Set SITE_ADMIN_SESSION_SECRET in .env (at least 32 bytes)}
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-}
+      QUIZ_ARENA_ADMIN_URL: ${QUIZ_ARENA_ADMIN_URL:-}
+      QUIZ_BANK_API_BASE_URL: ${QUIZ_BANK_API_BASE_URL:-}
+      QUIZ_BANK_EDGE_API_KEY: ${QUIZ_BANK_EDGE_API_KEY:-}
+      QUIZ_BANK_CONSUMER_ID: ${QUIZ_BANK_CONSUMER_ID:-}
+      QUIZ_BANK_CONSUMER_API_KEY: ${QUIZ_BANK_CONSUMER_API_KEY:-}
+      ANALYTICS_SERVICE_URL: http://analytics:3100
+      ANALYTICS_SERVICE_KEY: ${ANALYTICS_SERVICE_KEY:-}
+      # Caddy is the only published entrypoint; use its final forwarded peer.
+      ANALYTICS_TRUST_PROXY: "1"
+    networks:
+      - default
+      - analytics_http
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/admin/login').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  analytics-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: analytics_user
+      POSTGRES_DB: deutschmit_analytics
+      POSTGRES_PASSWORD: ${ANALYTICS_DB_PASSWORD:?Set a separate ANALYTICS_DB_PASSWORD}
+    volumes:
+      - analytics_db:/var/lib/postgresql/data
+    networks:
+      - analytics_storage
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analytics_user -d deutschmit_analytics -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  analytics:
+    build:
+      context: .
+      dockerfile: services/analytics/Dockerfile
+    restart: unless-stopped
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://analytics_user:${ANALYTICS_DB_PASSWORD:?Set a separate ANALYTICS_DB_PASSWORD}@analytics-db:5432/deutschmit_analytics
+      ANALYTICS_SERVICE_KEY: ${ANALYTICS_SERVICE_KEY:?Set a private key of at least 32 bytes}
+    networks:
+      - analytics_http
+      - analytics_storage
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/health',{headers:{Authorization:'Bearer '+process.env.ANALYTICS_SERVICE_KEY}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - site_caddy_data:/data
+      - site_caddy_config:/config
+    depends_on:
+      site:
+        condition: service_healthy
+
+volumes:
+  analytics_db:
+  site_db:
+  site_caddy_data:
+  site_caddy_config:
+
+networks:
+  analytics_http:
+    internal: true
+  analytics_storage:
+    internal: true

@@ -2,9 +2,19 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { api } from "@/lib/api";
-import { apiRoutes } from "@/lib/api-routes";
-import { usePublicAnalytics } from "@/app/analytics-provider";
+import type { ContactAnalyticsContext } from "@/lib/analytics/contract";
+import { useContactAnalytics } from "./use-contact-analytics";
+import { submitContactRequest } from "@/lib/contact/contact-client";
+import {
+  studentContactRequestSchema,
+  type StudentAgeGroup,
+  type StudentBudget,
+  type StudentFormat,
+  type StudentFrequency,
+  type StudentGoal,
+  type StudentLevel,
+  type StudentTimeSlot,
+} from "@/lib/contact/contact-schema";
 
 import {
   ChoiceCards,
@@ -48,15 +58,15 @@ const STUDENT_TIME_FIELD_ID = "student-time";
 const STUDENT_FREQUENCY_FIELD_ID = "student-frequency";
 const STUDENT_CONTACT_FIELD_ID = "student-contact";
 
-const STUDENT_AGE_OPTIONS: ChoiceOption[] = [
+const STUDENT_AGE_OPTIONS = [
   { value: "unter_16", label: "Unter 16" },
   { value: "16_25", label: "16-25" },
   { value: "26_35", label: "26-35" },
   { value: "36_50", label: "36-50" },
   { value: "50_plus", label: "50+" },
-];
+] satisfies Array<ChoiceOption & { value: StudentAgeGroup }>;
 
-const STUDENT_LEVEL_OPTIONS: ChoiceOption[] = [
+const STUDENT_LEVEL_OPTIONS = [
   { value: "A1", label: "A1", description: "Nullniveau" },
   { value: "A2", label: "A2", description: "Anfänger" },
   { value: "B1", label: "B1", description: "Mittelstufe" },
@@ -67,9 +77,9 @@ const STUDENT_LEVEL_OPTIONS: ChoiceOption[] = [
     label: "Ich weiß es nicht",
     description: "Bitte helft mir beim Einstufen",
   },
-];
+] satisfies Array<ChoiceOption & { value: StudentLevel }>;
 
-const STUDENT_GOAL_OPTIONS: ChoiceOption[] = [
+const STUDENT_GOAL_OPTIONS = [
   { value: "alltag", label: "Im Alltag sprechen" },
   { value: "pruefung", label: "Prüfung bestehen (Goethe/telc/TestDaF)" },
   { value: "karriere", label: "Arbeit / Karriere in Deutschland" },
@@ -77,36 +87,36 @@ const STUDENT_GOAL_OPTIONS: ChoiceOption[] = [
   { value: "universitaet", label: "Studium an der Universität" },
   { value: "reisen", label: "Reisen" },
   { value: "hobby", label: "Interesse / Hobby" },
-];
+] satisfies Array<ChoiceOption & { value: StudentGoal }>;
 
-const STUDENT_FORMAT_OPTIONS: ChoiceOption[] = [
+const STUDENT_FORMAT_OPTIONS = [
   { value: "individual", label: "Individuell mit Lehrkraft", icon: "👤" },
   { value: "group", label: "Mini-Gruppe (2-5 Personen)", icon: "👥" },
   { value: "self", label: "Selbstständig mit Bot/Material", icon: "📱" },
   { value: "undecided", label: "Noch nicht entschieden", icon: "🤷" },
-];
+] satisfies Array<ChoiceOption & { value: StudentFormat }>;
 
-const STUDENT_TIME_OPTIONS: ChoiceOption[] = [
+const STUDENT_TIME_OPTIONS = [
   { value: "morning", label: "Morgen (bis 12:00)" },
   { value: "day", label: "Tag (12:00-17:00)" },
   { value: "evening", label: "Abend (nach 17:00)" },
   { value: "weekend", label: "Wochenende" },
-];
+] satisfies Array<ChoiceOption & { value: StudentTimeSlot }>;
 
-const STUDENT_FREQUENCY_OPTIONS: ChoiceOption[] = [
+const STUDENT_FREQUENCY_OPTIONS = [
   { value: "once", label: "1x pro Woche" },
   { value: "twice", label: "2x pro Woche" },
   { value: "three_plus", label: "3+ pro Woche" },
   { value: "daily", label: "Täglich" },
-];
+] satisfies Array<ChoiceOption & { value: StudentFrequency }>;
 
-const STUDENT_BUDGET_OPTIONS: ChoiceOption[] = [
+const STUDENT_BUDGET_OPTIONS = [
   { value: "bis_50", label: "Bis 50 EUR" },
   { value: "50_100", label: "50-100 EUR" },
   { value: "100_200", label: "100-200 EUR" },
   { value: "200_plus", label: "200+ EUR" },
   { value: "offen", label: "Noch unklar" },
-];
+] satisfies Array<ChoiceOption & { value: StudentBudget }>;
 
 const INITIAL_STUDENT_STATE: StudentFormState = {
   name: "",
@@ -130,7 +140,8 @@ export function StudentWizard({ onClose }: WizardProps) {
   const [errorFieldId, setErrorFieldId] = useState<string | null>(null);
   const [submittedName, setSubmittedName] = useState("");
   const errorRef = useRef<HTMLParagraphElement>(null);
-  const { trackEvent } = usePublicAnalytics();
+  const analytics = useContactAnalytics("student");
+  const submitting = useRef(false);
 
   useEffect(() => {
     if (!errorFieldId) return;
@@ -178,6 +189,7 @@ export function StudentWizard({ onClose }: WizardProps) {
   function handleNext() {
     const validationError = validateCurrentStep(step);
     if (validationError) {
+      analytics.validationError();
       setErrorMessage(validationError.message);
       setErrorFieldId(validationError.fieldId);
       return;
@@ -195,20 +207,24 @@ export function StudentWizard({ onClose }: WizardProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
 
     const validationError = validateCurrentStep(3);
     if (validationError) {
+      analytics.validationError();
       setErrorMessage(validationError.message);
       setErrorFieldId(validationError.fieldId);
       return;
     }
 
+    submitting.current = true;
     setSubmitState("loading");
     setErrorMessage(null);
     setErrorFieldId(null);
 
+    let context: ContactAnalyticsContext | undefined;
     try {
-      await api.post(apiRoutes.public.contact, {
+      const payload = studentContactRequestSchema.parse({
         type: "student",
         name: form.name.trim(),
         ageGroup: form.ageGroup,
@@ -222,20 +238,18 @@ export function StudentWizard({ onClose }: WizardProps) {
         message: form.message.trim(),
         company: form.company,
       });
+      context = await analytics.submit();
+      await submitContactRequest(payload, context);
       setSubmittedName(form.name.trim());
       setSubmitState("success");
-      trackEvent("lead_submit_success", {
-        wizard_type: "student",
-        level: form.level,
-        goals_count: form.goals.length,
-        has_contact: Boolean(form.contact.trim()),
-        has_budget: Boolean(form.budget),
-        has_message: Boolean(form.message.trim()),
-      });
-    } catch {
+
+    } catch (error) {
+      analytics.submissionError(error, context);
       setSubmitState("error");
       setErrorMessage("Etwas ist schiefgelaufen. Bitte versuche es erneut.");
       setErrorFieldId(STUDENT_ERROR_ID);
+    } finally {
+      submitting.current = false;
     }
   }
 

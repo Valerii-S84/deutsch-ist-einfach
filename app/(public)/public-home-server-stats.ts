@@ -9,12 +9,19 @@ import {
 import type { StatsState } from "./public-home-types";
 
 export async function fetchPublicHomeServerStats(): Promise<StatsState> {
+  const statsUrl = getServerApiUrl(apiRoutes.public.stats);
+  if (!statsUrl) {
+    return createUnavailableStatsState();
+  }
+
   try {
-    const response = await fetch(getServerApiUrl(apiRoutes.public.stats), {
+    const response = await fetch(statsUrl, {
       cache: "no-store",
+      credentials: "omit",
       headers: {
         accept: "application/json",
       },
+      signal: AbortSignal.timeout(2_000),
     });
 
     if (!response.ok) {

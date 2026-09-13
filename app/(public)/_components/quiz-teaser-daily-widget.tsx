@@ -1,5 +1,6 @@
 "use client";
 
+import { analyticsAttributes } from "@/lib/analytics/elements";
 import { useEffect, useRef, useState } from "react";
 
 import { usePublicAnalytics } from "@/app/analytics-provider";
@@ -217,14 +218,14 @@ export function PublicHomeQuizTeaserDailyWidget({ trackedTelegramBotUrl }: Props
     saveQuizTeaserProgress(next);
   };
 
-  const fail = (error: unknown, questionIndex: number) => {
+  const fail = (error: unknown, _questionIndex: number) => {
     setErrorMessage(
       error instanceof QuizTeaserApiError && error.code === "quiz_teaser_quota_exceeded"
         ? QUOTA_MESSAGE
         : UNAVAILABLE_MESSAGE,
     );
     setStage("error");
-    trackEvent("quiz_teaser_error", { section: SECTION_NAME, question_index: questionIndex });
+    trackEvent("quiz_teaser_error", { section: SECTION_NAME, error_code: error instanceof TypeError ? "quiz_network_error" : error instanceof QuizTeaserApiError ? "quiz_server_error" : "quiz_invalid_response" });
   };
 
   const loadApiQuestion = async (round: ActiveQuizTeaserRound) => {
@@ -316,15 +317,8 @@ export function PublicHomeQuizTeaserDailyWidget({ trackedTelegramBotUrl }: Props
     setSelectedId(answer.id);
     setScore(nextScore);
 
-    trackEvent("quiz_teaser_question_answered", {
-      section: SECTION_NAME,
-      question_index: shownIndex,
-      selected_answer_id: answer.id,
-      is_correct: correct,
-      score: nextScore,
-      level: question.level,
-      quiz_source: round.source,
-    });
+    // Per-answer analytics is outside v1; game progress remains local.
+
 
     if (shownIndex === QUESTIONS_PER_QUIZ_DAY) {
       const completedCuratedDays =
@@ -476,8 +470,8 @@ export function PublicHomeQuizTeaserDailyWidget({ trackedTelegramBotUrl }: Props
           </div>
           <p className="mt-4 text-center text-xs font-medium text-slate-400">✓ Für heute gespeichert · nächste Runde morgen</p>
           <div className="mt-5 grid gap-3">
-            <a href={trackedTelegramBotUrl} target="_blank" rel="noreferrer" onClick={() => trackEvent("quiz_teaser_cta_clicked", { section: SECTION_NAME, question_index: 5, score, destination: "telegram_bot" })} className={`w-full ${ORANGE_BUTTON_CLASS}`}>Im Telegram-Bot weiterüben</a>
-            <a href={getTelegramChannelUrl()} target="_blank" rel="noreferrer" onClick={() => trackEvent("channel_cta_click", { section: SECTION_NAME, cta: "telegram_channel", score })} className={`w-full ${SECONDARY_BUTTON_CLASS}`}>Tägliche Lerntipps im Kanal</a>
+            <a {...analyticsAttributes("telegram_bot", "quiz_teaser", true)} href={trackedTelegramBotUrl} target="_blank" rel="noreferrer" onClick={() => trackEvent("quiz_teaser_cta_clicked", { section: SECTION_NAME, question_index: 5, score, destination: "telegram_bot" })} className={`w-full ${ORANGE_BUTTON_CLASS}`}>Im Telegram-Bot weiterüben</a>
+            <a {...analyticsAttributes("telegram_channel", "quiz_teaser", true)} href={getTelegramChannelUrl()} target="_blank" rel="noreferrer" onClick={() => trackEvent("channel_cta_click", { section: SECTION_NAME, cta: "telegram_channel", score })} className={`w-full ${SECONDARY_BUTTON_CLASS}`}>Tägliche Lerntipps im Kanal</a>
           </div>
         </div>
       )}

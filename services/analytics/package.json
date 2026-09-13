@@ -1,0 +1,12 @@
+{
+  "name": "deutschmit-analytics", "version": "1.0.0", "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/services/analytics/src/main.js",
+    "migrate": "node dist/services/analytics/src/cli.js migrate",
+    "cleanup": "node dist/services/analytics/src/cli.js retention",
+    "delete-visitor": "node dist/services/analytics/src/cli.js delete-visitor"
+  },
+  "dependencies": { "postgres": "^3.4.9", "zod": "^3.23.8" },
+  "devDependencies": { "@types/node": "^22.7.4", "typescript": "^5.6.2" }
+}

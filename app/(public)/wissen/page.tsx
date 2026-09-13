@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { analyticsAttributes } from "@/lib/analytics/elements";
 
 import { ARTICLE_EMBEDS, ARTICLE_SLUGS } from "@/lib/article-definitions";
 import { PUBLIC_SITE_NAME, getSiteUrl } from "@/lib/public-site-config";
@@ -104,6 +105,7 @@ export default function KnowledgePage() {
                     </p>
                     <Link
                       href={`/artikel/${slug}`}
+                      {...analyticsAttributes(`article_${slug}`, "wissen")}
                       className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-[#4DE2C6]/30 bg-[#4DE2C6]/10 px-5 py-2.5 text-sm font-semibold text-[#B9FFF2] transition hover:bg-[#4DE2C6]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B9FFF2] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                     >
                       Artikel lesen →
