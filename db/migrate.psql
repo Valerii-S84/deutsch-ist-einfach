@@ -1,0 +1,15 @@
+\set ON_ERROR_STOP on
+-- Existing installations may already have either original site migration.
+-- Serialize this explicit baseline without touching Analytics DB migrations.
+SELECT pg_advisory_lock(1847021102);
+SELECT to_regclass('public.contact_requests') IS NULL AS missing_contacts,
+       to_regclass('public.website_analytics_events') IS NULL AS missing_legacy
+\gset
+\if :missing_contacts
+\ir migrations/0001_create_contact_requests.sql
+\endif
+\if :missing_legacy
+\ir migrations/0002_create_website_analytics_events.sql
+\endif
+SELECT 'public.contact_requests'::regclass, 'public.website_analytics_events'::regclass;
+SELECT pg_advisory_unlock(1847021102);

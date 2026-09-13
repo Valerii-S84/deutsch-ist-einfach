@@ -12,19 +12,30 @@ services:
       - site_db:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      # TCP is unavailable during first-run initialization. Check both site tables
-      # too, so a failed initialization cannot expose a partially migrated site.
+      # Wait for TCP readiness; site-migrate is the schema gate for the site.
       test:
         - CMD-SHELL
         - >-
           PGPASSWORD="$$POSTGRES_PASSWORD" psql -h 127.0.0.1
           -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v ON_ERROR_STOP=1
-          -tAc "SELECT 'contact_requests'::regclass, 'website_analytics_events'::regclass"
+          -tAc "SELECT 1"
           > /dev/null
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 20s
+
+  site-migrate:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://site_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/deutschmit_site}
+    volumes:
+      - ./db:/site-db:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-ec", 'exec psql --no-psqlrc --dbname="$$DATABASE_URL" --file=/site-db/migrate.psql']
 
   site:
     build:
@@ -58,8 +69,8 @@ services:
       - default
       - analytics_http
     depends_on:
-      db:
-        condition: service_healthy
+      site-migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/admin/login').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 10s
@@ -103,6 +114,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+
+  analytics-retention:
+    build:
+      context: .
+      dockerfile: services/analytics/Dockerfile
+    restart: unless-stopped
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://analytics_user:${ANALYTICS_DB_PASSWORD:?Set a separate ANALYTICS_DB_PASSWORD}@analytics-db:5432/deutschmit_analytics
+    networks:
+      - analytics_storage
+    depends_on:
+      analytics:
+        condition: service_healthy
+    # Run after readiness, then daily; restart on cleanup failure.
+    command: ["sh", "-ec", "while :; do npm run cleanup || exit 1; sleep 86400; done"]
 
   caddy:
     image: caddy:2-alpine

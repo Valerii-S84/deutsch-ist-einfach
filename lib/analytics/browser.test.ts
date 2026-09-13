@@ -51,6 +51,11 @@ describe("page and session lifecycle", () => {
     window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })); await settle(); await click();
     const events = captured(); expect(new Set(events.map(event => event.session_id))).toEqual(new Set([first.session_id]));
     expect(events.filter(event => event.event_name === "page_view")).toHaveLength(2); expect(events.filter(event => event.event_name === "session_start")).toHaveLength(1);
+    expect(new Set(events.filter(event => event.event_name === "page_view").map(event => event.page_view_id)).size).toBe(2);
+    expect(events.filter(event => event.event_name === "element_click")).toHaveLength(2);
+    tracker.navigate("/books"); await settle(); await click();
+    expect(captured().filter(event => event.event_name === "page_view").at(-1)?.path).toBe("/books");
+    expect(captured().filter(event => event.event_name === "element_click")).toHaveLength(3);
   });
   it("a replaced visitor discards old queue before another action", async () => {
     const old = JSON.parse(localStorage.getItem(VISITOR_KEY)!);
