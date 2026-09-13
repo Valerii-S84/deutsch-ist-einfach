@@ -4,7 +4,7 @@ import { QuizArenaProvider } from "./quiz-arena-provider";
 
 const sections = [
   ["dashboard", "Статистика"], ["users", "Користувачі"], ["content", "Контент"],
-  ["economy", "Економіка"], ["promo", "Промокоди"], ["system", "Система"], ["login", "Вхід у бот"],
+  ["economy", "Економіка"], ["promo", "Промокоди"], ["system", "Система"], ["requests", "Заявки"], ["login", "Вхід у бот"],
 ] as const;
 export default function QuizArenaLayout({ children }: { children: React.ReactNode }) {
   return <div className="space-y-4">

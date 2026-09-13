@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { AnalyticsHttpError, readAnalyticsJson } from "@/lib/analytics/http";
+import { createAnalyticsRateLimiter } from "@/lib/server/analytics-rate-limit";
+import { getSiteUrl } from "@/lib/public-site-config";
+
+const limit = createAnalyticsRateLimiter();
 
 import { siteAnalyticsEventPayloadSchema } from "@/lib/site-analytics-contract";
 import { saveSiteAnalyticsEvent } from "@/lib/server/site-analytics-store";
@@ -20,11 +25,23 @@ function errorResponse(error: string, status: number) {
 }
 
 export async function POST(request: Request) {
+  let expectedOrigin: string;
+  try { expectedOrigin = new URL(getSiteUrl()).origin; }
+  catch { return errorResponse("analytics_unavailable", 503); }
+  if (request.headers.get("origin") !== expectedOrigin ||
+      (request.headers.get("sec-fetch-site") && request.headers.get("sec-fetch-site") !== "same-origin")) {
+    return errorResponse("origin_rejected", 403);
+  }
+  const retryAfter = limit(request);
+  if (retryAfter) return NextResponse.json({ error: "rate_limited" }, {
+    status: 429, headers: { ...RESPONSE_HEADERS, "Retry-After": String(retryAfter) },
+  });
   let untrustedPayload: unknown;
   try {
-    untrustedPayload = (await request.json()) as unknown;
-  } catch {
-    return errorResponse("invalid_json", 400);
+    untrustedPayload = await readAnalyticsJson(request);
+  } catch (error) {
+    return errorResponse(error instanceof AnalyticsHttpError ? error.code : "invalid_json",
+      error instanceof AnalyticsHttpError ? error.status : 400);
   }
 
   const validation = siteAnalyticsEventPayloadSchema.safeParse(untrustedPayload);

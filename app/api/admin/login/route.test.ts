@@ -18,12 +18,13 @@ let clock = Date.parse("2026-09-07T12:00:00Z");
 function request(path = "login", body = JSON.stringify(credentials), headers: Record<string, string> = {}) {
   return new Request(`${origin}/api/admin/${path}`, {
     method: "POST", body,
-    headers: { Origin: origin, "Content-Type": "application/json", ...headers },
+    headers: { Origin: origin, "Content-Type": "application/json", "X-Forwarded-For": "192.0.2.1", ...headers },
   });
 }
 
 beforeEach(() => {
   vi.stubEnv("NODE_ENV", "production");
+  vi.stubEnv("ANALYTICS_TRUST_PROXY", "1");
   vi.stubEnv("SITE_ADMIN_EMAIL", credentials.email);
   vi.stubEnv("SITE_ADMIN_PASSWORD", credentials.password);
   vi.stubEnv("SITE_ADMIN_SESSION_SECRET", "test-signing-key-with-at-least-32-bytes");
@@ -106,7 +107,7 @@ describe("local admin login/logout boundary with Quiz Arena OFF", () => {
   it("supports a preserved site Host behind an internal HTTP proxy", async () => {
     const response = await login(new Request("http://localhost:3000/api/admin/login", {
       method: "POST", body: JSON.stringify(credentials),
-      headers: { Origin: origin, Host: "site.example", "Content-Type": "application/json" },
+      headers: { Origin: origin, Host: "site.example", "Content-Type": "application/json", "X-Forwarded-For": "192.0.2.1" },
     }));
     expect(response.status).toBe(200);
   });
@@ -140,16 +141,22 @@ describe("local admin login/logout boundary with Quiz Arena OFF", () => {
     expect((await login(request("login", "", { "Content-Type": "text/plain" }))).status).toBe(415);
   });
 
-  it("limits attempts across supplied accounts and IP headers, then allows retry", async () => {
+  it("limits an attacking peer without locking out the owner on another peer", async () => {
     for (let i = 0; i < 10; i++) {
-      const response = await login(request("login", JSON.stringify({ ...credentials, password: "wrong" }), { "x-forwarded-for": `192.0.2.${i}` }));
-      expect(response.status).toBe(401);
+      expect((await login(request("login", "{}", { "x-forwarded-for": "192.0.2." + i + ", 198.51.100.20" }))).status).toBe(400);
     }
-    const response = await login(request());
-    expect(response.status).toBe(429);
-    expect(response.headers.get("Retry-After")).toBe("60");
-    expect(response.headers.get("set-cookie")).toBeNull();
+    const blocked = await login(request("login", JSON.stringify(credentials), { "x-forwarded-for": "198.51.100.20" }));
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("Retry-After")).toBe("60");
+    expect((await login(request())).status).toBe(200);
     vi.advanceTimersByTime(60_000);
+    expect((await login(request("login", JSON.stringify(credentials), { "x-forwarded-for": "198.51.100.20" }))).status).toBe(200);
+  });
+  it("requires a configured trusted peer in production instead of sharing an owner budget", async () => {
+    vi.stubEnv("ANALYTICS_TRUST_PROXY", "0");
+    expect((await login(request())).status).toBe(503);
+    vi.stubEnv("ANALYTICS_TRUST_PROXY", "1");
+    expect((await login(request("login", JSON.stringify(credentials), { "x-forwarded-for": "invalid" }))).status).toBe(503);
     expect((await login(request())).status).toBe(200);
   });
 });

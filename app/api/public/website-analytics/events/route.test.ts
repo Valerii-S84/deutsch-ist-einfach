@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SiteAnalyticsEventPayload } from "@/lib/site-analytics-contract";
 import { saveSiteAnalyticsEvent } from "@/lib/server/site-analytics-store";
@@ -36,14 +37,14 @@ const telegramClickPayload: SiteAnalyticsEventPayload = {
 };
 
 function analyticsRequest(body: BodyInit | null, headers: HeadersInit = {}) {
-  return new Request(
+  return withTestPeer(new Request(
     "https://site.example/api/public/website-analytics/events",
     {
       method: "POST",
       headers,
       body,
     },
-  );
+  ));
 }
 
 async function expectErrorResponse(
@@ -172,4 +173,43 @@ describe("POST /api/public/website-analytics/events", () => {
     expect(response.status).toBe(204);
     expect(saveSiteAnalyticsEventMock).toHaveBeenCalledOnce();
   });
+});
+
+vi.mock("server-only", () => ({}));
+let testPeer = 0;
+beforeEach(() => vi.stubEnv("ANALYTICS_TRUST_PROXY", "1"));
+afterEach(() => vi.unstubAllEnvs());
+
+function withTestPeer(request: Request) {
+  if (!request.headers.has("origin")) request.headers.set("origin", new URL(request.url).origin);
+  if (!request.headers.has("content-type") || request.headers.get("content-type") === "text/plain;charset=UTF-8") request.headers.set("content-type", "application/json");
+  if (!request.headers.has("x-forwarded-for")) request.headers.set("x-forwarded-for", "192.0.2." + (++testPeer));
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", new URL(request.url).origin);
+  return request;
+}
+
+it("rejects foreign origins and cross-site metadata before reading or saving", async () => {
+  for (const headers of [{ Origin: "https://evil.example" }, { "Sec-Fetch-Site": "cross-site" }] as Record<string, string>[]) {
+    const request = analyticsRequest(JSON.stringify(pageViewPayload), headers);
+    const reader = vi.spyOn(request.body!, "getReader");
+    expect((await POST(request)).status).toBe(403);
+    expect(reader).not.toHaveBeenCalled();
+  }
+  expect(saveSiteAnalyticsEventMock).not.toHaveBeenCalled();
+});
+it("bounds declared and actual legacy body bytes before persistence", async () => {
+  const { MAX_BATCH_BYTES } = await import("@/lib/analytics/contract");
+  for (const request of [
+    analyticsRequest("{}", { "Content-Length": String(MAX_BATCH_BYTES + 1) }),
+    analyticsRequest(JSON.stringify({ data: "x".repeat(MAX_BATCH_BYTES) }), { "Content-Length": "2" }),
+  ]) expect((await POST(request)).status).toBe(413);
+  expect(saveSiteAnalyticsEventMock).not.toHaveBeenCalled();
+});
+it("limits repeated legacy writes and keeps other clients independent", async () => {
+  for (let i = 0; i < 60; i++) expect((await POST(analyticsRequest(JSON.stringify(pageViewPayload), { "X-Forwarded-For": "198.51.100.50" }))).status).toBe(204);
+  const response = await POST(analyticsRequest(JSON.stringify(pageViewPayload), { "X-Forwarded-For": "198.51.100.50" }));
+  expect(response.status).toBe(429);
+  expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(0);
+  expect(saveSiteAnalyticsEventMock).toHaveBeenCalledTimes(60);
+  expect((await POST(analyticsRequest(JSON.stringify(pageViewPayload), { "X-Forwarded-For": "198.51.100.51" }))).status).toBe(204);
 });

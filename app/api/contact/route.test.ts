@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ContactRequest } from "@/lib/contact/contact-schema";
 import { handleContactSubmission } from "@/lib/server/contact-submission";
@@ -47,7 +48,7 @@ function contactRequest(
   headers: HeadersInit = {},
   url = "https://site.example/api/contact",
 ) {
-  return new Request(url, {
+  return withTestPeer(new Request(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -56,7 +57,7 @@ function contactRequest(
       ...headers,
     },
     body,
-  });
+  }));
 }
 
 async function expectJson(response: Response, status: number, body: unknown) {
@@ -196,4 +197,32 @@ describe("POST /api/contact", () => {
     expect(failedBody).not.toContain(studentPayload.message);
     expect(failedBody).not.toContain("internal failure");
   });
+});
+
+vi.mock("server-only", () => ({}));
+let testPeer = 0;
+beforeEach(() => vi.stubEnv("ANALYTICS_TRUST_PROXY", "1"));
+afterEach(() => vi.unstubAllEnvs());
+
+function withTestPeer(request: Request) {
+  if (!request.headers.has("origin")) request.headers.set("origin", new URL(request.url).origin);
+  if (!request.headers.has("content-type") || request.headers.get("content-type") === "text/plain;charset=UTF-8") request.headers.set("content-type", "application/json");
+  if (!request.headers.has("x-forwarded-for")) request.headers.set("x-forwarded-for", "192.0.2." + (++testPeer));
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", new URL(request.url).origin);
+  return request;
+}
+
+it("limits contact persistence per trusted client without blocking another client", async () => {
+  const headers = { "X-Forwarded-For": "198.51.100.10" };
+  for (let i = 0; i < 5; i++) expect((await POST(contactRequest(JSON.stringify(studentPayload), headers))).status).toBe(202);
+  const response = await POST(contactRequest(JSON.stringify(studentPayload), headers));
+  expect(response.status).toBe(429);
+  expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(0);
+  expect(handleContactSubmissionMock).toHaveBeenCalledTimes(5);
+  expect((await POST(contactRequest(JSON.stringify(partnerPayload), { "X-Forwarded-For": "198.51.100.11" }))).status).toBe(202);
+});
+it("does not persist when a production client identity is unavailable", async () => {
+  vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("ANALYTICS_TRUST_PROXY", "0");
+  expect((await POST(contactRequest(JSON.stringify(studentPayload)))).status).toBe(503);
+  expect(handleContactSubmissionMock).not.toHaveBeenCalled();
 });

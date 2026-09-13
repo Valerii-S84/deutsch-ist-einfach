@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createRequestRateLimiter } from "@/lib/server/request-rate-limit";
 
 import {
   createSiteAdminSession,
@@ -12,8 +13,7 @@ export const runtime = "nodejs";
 const RESPONSE_HEADERS = { "Cache-Control": "private, no-store" };
 const MAX_BODY_BYTES = 4096;
 
-// One account, one bounded budget per server process; no spoofable IP headers.
-let loginBudget = { attempts: 0, resetsAt: 0 };
+const limit = createRequestRateLimiter({ maxRequests: 10, requireTrustedClient: true });
 
 export async function POST(request: Request) {
   if (!isSameOriginAdminRequest(request)) {
@@ -23,15 +23,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AUTH_UNAVAILABLE" }, { status: 503, headers: RESPONSE_HEADERS });
   }
 
-  const now = Date.now();
-  if (now >= loginBudget.resetsAt) loginBudget = { attempts: 0, resetsAt: now + 60_000 };
-  if (loginBudget.attempts >= 10) {
+  const retryAfter = limit(request);
+  if (retryAfter === null) {
+    return NextResponse.json({ error: "AUTH_CLIENT_UNAVAILABLE" }, { status: 503, headers: RESPONSE_HEADERS });
+  }
+  if (retryAfter > 0) {
     return NextResponse.json({ error: "TOO_MANY_REQUESTS" }, {
-      status: 429,
-      headers: { ...RESPONSE_HEADERS, "Retry-After": String(Math.ceil((loginBudget.resetsAt - now) / 1000)) },
+      status: 429, headers: { ...RESPONSE_HEADERS, "Retry-After": String(retryAfter) },
     });
   }
-  loginBudget.attempts += 1;
 
   if (request.headers.get("content-type")?.split(";")[0].trim() !== "application/json") {
     return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 415, headers: RESPONSE_HEADERS });

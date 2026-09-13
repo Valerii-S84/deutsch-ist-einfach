@@ -52,7 +52,7 @@ services:
       QUIZ_BANK_CONSUMER_API_KEY: ${QUIZ_BANK_CONSUMER_API_KEY:-}
       ANALYTICS_SERVICE_URL: http://analytics:3100
       ANALYTICS_SERVICE_KEY: ${ANALYTICS_SERVICE_KEY:-}
-      # Caddy is the only published entrypoint; use its final forwarded peer.
+      # Caddy overwrites X-Forwarded-For and is the only published entrypoint (analytics, contact, login).
       ANALYTICS_TRUST_PROXY: "1"
     networks:
       - default

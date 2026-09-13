@@ -146,3 +146,12 @@ login/2FA, користувачів і промокодів із persisted readb
 Версія збірки, межі доказів, запуск і повернення записані в
 [чинному протоколі](statistics-manual-verification.md). Production env/дані,
 commit і deploy не використовувалися; фактичне перемикання не виконане.
+
+
+### PR #22 review fixes — 2026-09-13
+
+Quiz Arena now exposes /admin/quiz-arena/requests in its navigation. The page reads and updates the existing backend contact-requests source, checks the returned status and refreshes the list; Website requests retain their separate site source. An unavailable source is displayed as an error.
+
+Legacy analytics now checks the configured same origin and fetch metadata, bounds declared and streamed JSON bytes, and allows 60 requests per minute per client. Contact persistence allows 5 and administrator login 10 requests per minute per client. These are bounded in-memory limits per process, not distributed quotas. Production contact/login require a valid trusted client address. Caddy overwrites X-Forwarded-For with its direct peer address and remains the only published entrypoint; ANALYTICS_TRUST_PROXY=1 relies on that boundary. IP bucket keys are salted hashes held only in memory.
+
+Verification: 104 passing targeted tests across the original successful five suites and the four corrected suites; TypeScript and changed-file ESLint passed. Caddy configuration validated in an isolated local container. UI tests cover navigation, separate sources, status write/readback and unavailable-source rendering with mocked APIs; proxy tests cover routing. This evidence does not represent a live backend/SQL or production rollout test.

@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { createRequestRateLimiter } from "@/lib/server/request-rate-limit";
+
+const limit = createRequestRateLimiter({ maxRequests: 5, requireTrustedClient: true });
 
 import { parseContactTransport } from "@/lib/contact/contact-schema";
 import { handleContactSubmission } from "@/lib/server/contact-submission";
@@ -99,6 +102,11 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "forbidden" }, 403);
   }
 
+  const retryAfter = limit(request);
+  if (retryAfter === null) return jsonResponse({ error: "contact_unavailable" }, 503);
+  if (retryAfter > 0) return NextResponse.json({ error: "rate_limited" }, {
+    status: 429, headers: { ...RESPONSE_HEADERS, "Retry-After": String(retryAfter) },
+  });
   let rawBody: string;
   try {
     rawBody = await readBodyWithLimit(request);
