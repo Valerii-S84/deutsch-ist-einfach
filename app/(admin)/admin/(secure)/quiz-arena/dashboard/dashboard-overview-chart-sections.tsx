@@ -39,32 +39,32 @@ function buildActivityBadge(model: DashboardOverviewModel): string {
   const { hourlyActivity } = model;
 
   if (hourlyActivity.status === "invalid") {
-    return "Berlin-Zeit · Daten ungültig";
+    return "Час Берліна · некоректні дані";
   }
 
   if (hourlyActivity.status === "partial") {
-    return `Berlin-Zeit · ${hourlyActivity.pointCount} von 24 Stundenfenstern`;
+    return `Час Берліна · ${hourlyActivity.pointCount} із 24 годин`;
   }
 
-  return `Berlin-Zeit · ${hourlyActivity.pointCount} Stundenfenster`;
+  return `Час Берліна · ${hourlyActivity.pointCount} годин`;
 }
 
 function buildAverageHourDescription(model: DashboardOverviewModel): string {
   const { hourlyActivity } = model;
 
   if (hourlyActivity.status === "partial") {
-    return "Durchschnitt über die vorhandenen Berliner Stundenfenster. Fehlende Buckets wurden nicht als 0 ergänzt.";
+    return "Середнє за наявними годинами за часом Берліна. Пропущені години не доповнюються нулями.";
   }
 
   if (hourlyActivity.status === "invalid") {
-    return "Für diese Kennzahl liegen aktuell keine vertrauenswürdigen Stundenwerte vor.";
+    return "Для цього показника немає достовірних погодинних даних.";
   }
 
-  return "Durchschnitt distinct aktiver Nutzer je Berliner Stundenfenster im gewählten Zeitraum.";
+  return "Середня кількість окремих активних користувачів на годину за часом Берліна у вибраному періоді.";
 }
 
 function formatPercent(value: number): string {
-  return `${value.toLocaleString("de-DE", { maximumFractionDigits: 1 })}%`;
+  return `${value.toLocaleString("uk-UA", { maximumFractionDigits: 1 })}%`;
 }
 
 function DistributionPieCard({
@@ -91,7 +91,7 @@ function DistributionPieCard({
           <p className="mt-1 text-sm text-ember/70">{description}</p>
         </div>
         <div className="rounded-full border border-ember/15 bg-white/80 px-3 py-1 text-xs text-ember/75">
-          Gesamt: {section.status === "invalid" ? "Keine Daten" : section.totalUsers.toLocaleString("de-DE")}
+          Усього: {section.status === "invalid" ? "Немає даних" : section.totalUsers.toLocaleString("uk-UA")}
         </div>
       </div>
       <div className="mt-4">
@@ -106,8 +106,8 @@ function DistributionPieCard({
                 formatter={(value, _name, props) => {
                   const percent = Number(props.payload?.percent ?? 0);
                   return [
-                    `${Number(value).toLocaleString("de-DE")} Nutzer · ${formatPercent(percent)}`,
-                    props.payload?.label ?? "Nutzer",
+                    `${Number(value).toLocaleString("uk-UA")} Користувачі · ${formatPercent(percent)}`,
+                    props.payload?.label ?? "Користувачі",
                   ];
                 }}
               />
@@ -128,7 +128,7 @@ function DistributionPieCard({
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <ChartFallback message={section.message ?? "Keine Verteilungsdaten verfügbar."} />
+          <ChartFallback message={section.message ?? "Даних про розподіл немає."} />
         )}
       </div>
       <div className="mt-4 space-y-2">
@@ -142,7 +142,7 @@ function DistributionPieCard({
               <span className="truncate font-medium text-[#1f4257]">{item.label}</span>
             </div>
             <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-ember/70">
-              {formatPercent(item.percent)} · {item.users.toLocaleString("de-DE")}
+              {formatPercent(item.percent)} · {item.users.toLocaleString("uk-UA")}
             </span>
           </div>
         ))}
@@ -163,11 +163,11 @@ export function DashboardActivitySection({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ember/45">
-              Aktivitaet
+              Активність
             </p>
-            <h2 className="mt-1 text-2xl">Aktive Nutzer nach Berliner Stunde</h2>
+            <h2 className="mt-1 text-2xl">Активні користувачі за годинами (Берлін)</h2>
             <p className="mt-1 text-sm text-ember/70">
-              Zeigt distinct aktive Nutzer je Berliner Stundenfenster im gewählten Zeitraum.
+              Окремі активні користувачі за кожною годиною за часом Берліна у вибраному періоді.
             </p>
           </div>
           <div className="rounded-full border border-ember/15 bg-white/80 px-3 py-1 text-xs text-ember/75">
@@ -214,50 +214,50 @@ export function DashboardActivitySection({
                   contentStyle={CHART_TOOLTIP_STYLE}
                   labelFormatter={(value) => `${formatHourLabel(Number(value))} Uhr`}
                   formatter={(value) => [
-                    `${Number(value).toLocaleString("de-DE")} Nutzer`,
-                    "Aktiv",
+                    `${Number(value).toLocaleString("uk-UA")} Користувачі`,
+                    "Активні",
                   ]}
                 />
                 <Bar
                   dataKey="active_users"
-                  name="Aktiv"
+                  name="Активні"
                   fill="url(#dashboardHourlyGradient)"
                   radius={[12, 12, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <ChartFallback message="Für diese Sektion konnten keine darstellbaren Stundenwerte erzeugt werden." />
+            <ChartFallback message="Погодинні дані для цього розділу недоступні." />
           )}
         </div>
       </article>
 
       <article className="surface rounded-[32px] p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-ember/45">
-          Stunden-Insights
+          Погодинна активність
         </p>
         <div className="mt-4 space-y-3">
           <div className="rounded-[24px] border border-[#295065]/12 bg-[linear-gradient(135deg,rgba(41,80,101,0.12),rgba(137,245,199,0.18))] p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-ember/50">Peak</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-ember/50">Пік</p>
             <p className="mt-2 text-2xl font-semibold text-[#1f4257]">
               {hourlyActivity.peakWindow
                 ? formatHourRangeLabel(hourlyActivity.peakWindow.hour)
-                : "Keine Daten"}
+                : "Немає даних"}
             </p>
             <p className="mt-1 text-sm text-ember/70">
               {hourlyActivity.peakWindow
-                ? `${hourlyActivity.peakWindow.active_users.toLocaleString("de-DE")} aktive Nutzer im staerksten Stundenfenster`
-                : "Im gewählten Zeitraum wurden keine belastbaren Peak-Werte erfasst."}
+                ? `${hourlyActivity.peakWindow.active_users.toLocaleString("uk-UA")} активних користувачів у пікову годину`
+                : "За період немає достатніх даних для визначення пікової години."}
             </p>
           </div>
 
           <div className="rounded-[24px] border border-ember/12 bg-[#fff9f3] p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-ember/50">
-              Ø je Stundenfenster
+              У середньому за годину
             </p>
             <p className="mt-2 text-2xl font-semibold text-[#1f4257]">
               {formatMetricValue(hourlyActivity.averageUsersPerHourBucket, (value) =>
-                value.toLocaleString("de-DE", {
+                value.toLocaleString("uk-UA", {
                   maximumFractionDigits: 1,
                 }),
               )}
@@ -266,7 +266,7 @@ export function DashboardActivitySection({
           </div>
 
           <div className="rounded-[24px] border border-ember/12 bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-ember/50">Top-Zeitfenster</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-ember/50">Найактивніші години</p>
             <div className="mt-3 space-y-2">
               {hourlyActivity.topWindows.length > 0 ? (
                 hourlyActivity.topWindows.map((item) => (
@@ -278,12 +278,12 @@ export function DashboardActivitySection({
                       {formatHourRangeLabel(item.hour)}
                     </span>
                     <span className="rounded-full bg-[#1f4257] px-2.5 py-1 text-xs font-semibold text-white">
-                      {item.active_users.toLocaleString("de-DE")}
+                      {item.active_users.toLocaleString("uk-UA")}
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-ember/65">Noch keine Aktivitaetsdaten.</p>
+                <p className="text-sm text-ember/65">Даних про активність ще немає.</p>
               )}
             </div>
           </div>
@@ -299,21 +299,21 @@ export function DashboardUserDemographicsSection({
   return (
     <section className="grid gap-4 xl:grid-cols-3">
       <DistributionPieCard
-        eyebrow="Nutzerprofil"
-        title="Nutzer nach Sprache"
-        description="Registrierte Nutzer nach Telegram-Sprachcode als prozentuale Verteilung."
+        eyebrow="Профіль користувачів"
+        title="Мови користувачів"
+        description="Частки зареєстрованих користувачів за мовою Telegram."
         section={model.userLanguageSection}
       />
       <DistributionPieCard
-        eyebrow="Demografie"
-        title="Nutzer nach Alter"
-        description="Wird automatisch als Kreisdiagramm gefüllt, sobald Altersgruppen vom Backend kommen."
+        eyebrow="Демографія"
+        title="Вік користувачів"
+        description="Розподіл доступний лише за наявності вікових даних у джерелі."
         section={model.userAgeSection}
       />
       <DistributionPieCard
-        eyebrow="Demografie"
-        title="Nutzer nach Geschlecht"
-        description="Wird automatisch als Kreisdiagramm gefüllt, sobald Geschlechtsgruppen vom Backend kommen."
+        eyebrow="Демографія"
+        title="Стать користувачів"
+        description="Розподіл доступний лише за наявності даних про стать у джерелі."
         section={model.userGenderSection}
       />
     </section>
@@ -333,15 +333,15 @@ export function DashboardRevenueUsersSection({
       <article className="surface overflow-hidden rounded-3xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl">Tagesumsatz (⭐)</h2>
+            <h2 className="text-xl">Дохід за днями (⭐)</h2>
             <p className="mt-1 text-sm text-ember/70">
-              Umsatzkurve als sekundäre Geschäftssicht neben dem Aktivitätsprofil.
+              Дохід у Telegram Stars за днями.
             </p>
           </div>
           <div className="rounded-full border border-ember/15 bg-white/80 px-3 py-1 text-xs text-ember/75">
-            Gesamt:{" "}
+            Усього:{" "}
             {formatMetricValue(model.revenueSection.totalRevenueStars, (value) =>
-              `${value.toLocaleString("de-DE")} ⭐`,
+              `${value.toLocaleString("uk-UA")} ⭐`,
             )}
           </div>
         </div>
@@ -378,7 +378,7 @@ export function DashboardRevenueUsersSection({
                   cursor={{ stroke: "#295065", strokeDasharray: "4 6", strokeOpacity: 0.35 }}
                   contentStyle={CHART_TOOLTIP_STYLE}
                   labelFormatter={(value) => formatShortDateLabel(String(value))}
-                  formatter={(value) => [`${Number(value).toLocaleString("de-DE")} ⭐`, "Umsatz"]}
+                  formatter={(value) => [`${Number(value).toLocaleString("uk-UA")} ⭐`, "Дохід"]}
                 />
                 <Area
                   type="monotone"
@@ -390,7 +390,7 @@ export function DashboardRevenueUsersSection({
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <ChartFallback message={model.revenueSection.message ?? "Keine Umsatzdaten verfügbar."} />
+            <ChartFallback message={model.revenueSection.message ?? "Даних про дохід немає."} />
           )}
         </div>
       </article>
@@ -398,15 +398,15 @@ export function DashboardRevenueUsersSection({
       <article className="surface overflow-hidden rounded-3xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl">Neue vs. aktive Nutzer</h2>
+            <h2 className="text-xl">Нові та активні користувачі</h2>
             <p className="mt-1 text-sm text-ember/70">
-              Besser lesbarer Vergleich zwischen Wachstum und echter Nutzung.
+              Реєстрації та активні користувачі за днями.
             </p>
           </div>
           <div className="rounded-full border border-ember/15 bg-white/80 px-3 py-1 text-xs text-ember/75">
-            Ø aktiv je geliefertem Tag:{" "}
+            Середня активність за день із даними:{" "}
             {formatMetricValue(model.usersSection.averageActiveUsersPerDay, (value) =>
-              value.toLocaleString("de-DE", { maximumFractionDigits: 1 }),
+              value.toLocaleString("uk-UA", { maximumFractionDigits: 1 }),
             )}
           </div>
         </div>
@@ -438,10 +438,10 @@ export function DashboardRevenueUsersSection({
                   contentStyle={CHART_TOOLTIP_STYLE}
                   labelFormatter={(value) => formatShortDateLabel(String(value))}
                 />
-                <Line dataKey="new_users" name="Neu" stroke="#f58d74" strokeWidth={3} dot={false} />
+                <Line dataKey="new_users" name="Нові" stroke="#f58d74" strokeWidth={3} dot={false} />
                 <Line
                   dataKey="active_users"
-                  name="Aktiv"
+                  name="Активні"
                   stroke="#295065"
                   strokeWidth={3}
                   dot={false}
@@ -449,7 +449,7 @@ export function DashboardRevenueUsersSection({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <ChartFallback message={model.usersSection.message ?? "Keine Nutzerdaten verfügbar."} />
+            <ChartFallback message={model.usersSection.message ?? "Даних про користувачів немає."} />
           )}
         </div>
       </article>
@@ -469,9 +469,9 @@ export function DashboardFunnelProductsSection({
     <section className="grid gap-4 xl:grid-cols-2">
       <article className="surface overflow-hidden rounded-3xl p-5">
         <div>
-          <h2 className="text-xl">Zeitfenster-Milestones</h2>
+          <h2 className="text-xl">Кроки активності за період</h2>
           <p className="mt-1 text-sm text-ember/70">
-            Vergleich derselben Zeitraum-Meilensteine; kein cohort-basierter Conversion-Funnel.
+            Досягнення за вибраний період. Кроки можуть стосуватися різних груп користувачів.
           </p>
         </div>
         <div className="mt-4">
@@ -515,17 +515,17 @@ export function DashboardFunnelProductsSection({
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <ChartFallback message={model.funnelSection.message ?? "Keine Funnel-Daten verfügbar."} />
+            <ChartFallback message={model.funnelSection.message ?? "Даних про кроки активності немає."} />
           )}
         </div>
         <div className="mt-3 space-y-1 text-xs text-ember/75">
           {model.funnelSection.items.map((item, index) => (
             <p key={`${item.step}-${index}`}>
-              {item.step_label}: {item.value.toLocaleString("de-DE")} Nutzer
+              {item.step_label}: {item.value.toLocaleString("uk-UA")} Користувачі
               {item.ratio_to_previous !== null
-                ? ` · ${item.ratio_to_previous.toLocaleString("de-DE", {
+                ? ` · ${item.ratio_to_previous.toLocaleString("uk-UA", {
                     maximumFractionDigits: 1,
-                  })}% relativ zur vorherigen Stufe im selben Zeitraum`
+                  })}% від попереднього кроку за той самий період`
                 : ""}
             </p>
           ))}
@@ -534,9 +534,9 @@ export function DashboardFunnelProductsSection({
 
       <article className="surface overflow-hidden rounded-3xl p-5">
         <div>
-          <h2 className="text-xl">Top-Produkte (⭐ Umsatz)</h2>
+          <h2 className="text-xl">Найпопулярніші продукти за доходом (⭐)</h2>
           <p className="mt-1 text-sm text-ember/70">
-            Horizontaler Vergleich, damit Produktnamen nicht mehr gequetscht wirken.
+            Продукти з найбільшим доходом у Telegram Stars.
           </p>
         </div>
         <div className="mt-4">
@@ -577,14 +577,14 @@ export function DashboardFunnelProductsSection({
                 />
                 <Tooltip
                   contentStyle={CHART_TOOLTIP_STYLE}
-                  formatter={(value) => [`${Number(value).toLocaleString("de-DE")} ⭐`, "Umsatz"]}
+                  formatter={(value) => [`${Number(value).toLocaleString("uk-UA")} ⭐`, "Дохід"]}
                 />
                 <Bar dataKey="revenue_stars" fill="url(#dashboardProductsGradient)" radius={[0, 10, 10, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <ChartFallback
-              message={model.topProductsSection.message ?? "Keine Produktumsätze verfügbar."}
+              message={model.topProductsSection.message ?? "Даних про дохід за продуктами немає."}
             />
           )}
         </div>
@@ -596,7 +596,7 @@ export function DashboardFunnelProductsSection({
 export function DashboardAlertsSection({ model }: DashboardOverviewSectionsProps) {
   return (
     <section className="surface rounded-2xl p-4">
-      <h2 className="text-xl">Warnungen</h2>
+      <h2 className="text-xl">Попередження</h2>
       <div className="mt-3">
         <SectionStateNotice status={model.alertsSection.status} message={model.alertsSection.message} />
       </div>

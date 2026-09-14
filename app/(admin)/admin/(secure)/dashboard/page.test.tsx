@@ -82,19 +82,19 @@ describe("site website analytics dashboard", () => {
     await flushQueries();
 
     expect(fetchWebsiteAnalyticsOverview).toHaveBeenCalledExactlyOnceWith(7);
-    expect(container.textContent).toContain("Стара статистика сайту");
-    expect(container.textContent).toContain("Auswertung für den gewählten Zeitraum.");
+    expect(container.textContent).toContain("Історичні дані сайту");
+    expect(container.textContent).toContain("Дані попередньої системи обліку за вибраний період. Вони не додаються до поточних підсумків.");
     expect(Array.from(container.querySelectorAll("article p:last-child"), (cell) =>
       cell.textContent?.trim(),
-    )).toEqual(["42", "1.234", "9"]);
+    )).toEqual(["42", "1\u00a0234", "9"]);
 
     const rows = Array.from(container.querySelectorAll("tbody tr"), (row) =>
       Array.from(row.querySelectorAll("td"), (cell) => cell.textContent?.trim()),
     );
     expect(rows).toHaveLength(2);
-    expect(rows[0].slice(1)).toEqual(["42", "1.234", "9"]);
+    expect(rows[0].slice(1)).toEqual(["42", "1\u00a0234", "9"]);
     expect(rows[1]).toEqual(["/contact", "321", "21"]);
-    expect(container.textContent).not.toMatch(/Aktive Nutzer|Nutzung wichtiger Funktionen|Umsatz|Erstkauf/);
+    expect(container.textContent).not.toMatch(/Aktive Користувачі|Використання функцій бота|Umsatz|Перша покупка/);
   });
 
   it("loads website analytics for each selected period", async () => {
@@ -116,7 +116,7 @@ describe("site website analytics dashboard", () => {
       await flushQueries();
 
       expect(fetchWebsiteAnalyticsOverview).toHaveBeenLastCalledWith(days);
-      expect(container.textContent).toContain(`Letzte ${days} Tage`);
+      expect(container.textContent).toContain(`Останні ${days} днів`);
     }
 
     expect(fetchWebsiteAnalyticsOverview).toHaveBeenCalledTimes(3);
@@ -130,12 +130,12 @@ describe("site website analytics dashboard", () => {
       }),
     );
     const container = renderDashboard();
-    expect(container.textContent).toContain("Wird geladen...");
+    expect(container.textContent).toContain("Завантаження…");
 
     await act(async () => resolveResponse(analyticsData));
     await flushQueries();
 
-    expect(container.textContent).not.toContain("Wird geladen...");
+    expect(container.textContent).not.toContain("Завантаження…");
     expect(container.textContent).toContain("/contact");
   });
 
@@ -144,9 +144,9 @@ describe("site website analytics dashboard", () => {
     const container = renderDashboard();
     await flushQueries();
 
-    expect(container.textContent).toContain("Website-Analytics konnten nicht geladen werden.");
+    expect(container.textContent).toContain("Не вдалося завантажити історичну статистику сайту.");
     expect(container.textContent).toContain("Analytics unavailable");
-    expect(container.textContent).not.toContain("Wird geladen...");
+    expect(container.textContent).not.toContain("Завантаження…");
     expect(container.textContent).not.toContain("Dashboard-Daten konnten nicht geladen");
   });
 
@@ -165,7 +165,7 @@ describe("site website analytics dashboard", () => {
     )).toEqual(["0", "0", "0"]);
     expect(Array.from(container.querySelectorAll("tbody"), (table) =>
       table.textContent?.trim(),
-    )).toEqual(["Keine Daten", "Keine Daten"]);
-    expect(container.textContent).not.toContain("Website-Analytics konnten nicht geladen werden.");
+    )).toEqual(["Немає даних", "Немає даних"]);
+    expect(container.textContent).not.toContain("Не вдалося завантажити історичну статистику сайту.");
   });
 });

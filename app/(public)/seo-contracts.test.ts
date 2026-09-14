@@ -277,10 +277,14 @@ describe("public SEO metadata contracts", () => {
     expect(source).toContain("Hetzner Online GmbH");
     expect(source).toContain("Analytics-Ereignisse: 90 Tage.");
     expect(source).toContain("6 Monate nach der letzten Bearbeitung");
-    expect(source).toContain("Server-, Proxy- und Sicherheitsprotokolle: 14 Tage");
+    expect(source).toContain("Hosting und technische Server-Protokolle");
+    // No fixed log retention period is established by the current deployment.
+    expect(source).not.toContain("Server-, Proxy- und Sicherheitsprotokolle: 14 Tage");
     expect(source).toContain("Du erreichst uns per E-Mail");
     expect(source).toContain("§ 25 Abs. 2 TDDDG");
-    expect(source).toContain("Abs. 1 TDDDG");
+    // The deployed copy describes automatic analytics and a retained opt-out.
+    // Do not reintroduce the obsolete consent-flow wording through this test.
+    expect(source).toContain("IP-Adressen dienen nur kurzzeitig der Begrenzung");
 
     expect(source).not.toContain("nicht betriebsbereit");
     expect(source).not.toContain("Kontaktformular");

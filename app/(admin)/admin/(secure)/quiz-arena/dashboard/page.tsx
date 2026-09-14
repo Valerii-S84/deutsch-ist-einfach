@@ -37,19 +37,19 @@ export default function DashboardPage() {
       <header className="surface rounded-2xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-ember/60">Admin Übersicht</p>
-            <h1 className="mt-1 text-3xl">Geschäftszahlen klar erklärt</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-ember/60">Статистика бота</p>
+            <h1 className="mt-1 text-3xl">Огляд Quiz Arena Bot</h1>
             <p className="mt-2 text-sm text-ember/70">
-              Quiz Arena Bot · 7/30/90 Tage. DAU/WAU/MAU: feste Fenster; Abos: jetzt; Sprachen: seit Beginn. Umsatzkarten und Kurven verwenden historisch unterschiedliche Statusfilter. Backend-Vertrag noch zu bestätigen.
+              Активність, користувачі та покупки Quiz Arena Bot. Період — 7, 30 або 90 днів. Активність за добу, тиждень і місяць має власні фіксовані вікна; підписки показано на поточну мить. Деталі обчислень наведені біля показників.
             </p>
             {overviewModel ? (
               <p className="mt-1 text-xs text-ember/60">
-                Letzte Aktualisierung: {overviewModel.generatedAtLabel} (Berlin)
+                Останнє оновлення: {overviewModel.generatedAtLabel} (Berlin)
               </p>
             ) : null}
           </div>
           <select
-            aria-label="Zeitraum Quiz Arena"
+            aria-label="Період Quiz Arena"
             value={period}
             onChange={(event) => setPeriod(event.target.value)}
             className="rounded-xl border border-ember/20 bg-white px-3 py-2"
@@ -63,12 +63,12 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {isLoading ? <p className="text-sm">Dashboard-Daten werden geladen...</p> : null}
+      {isLoading ? <p className="text-sm">Статистика бота завантажується…</p> : null}
 
       {queryError ? (
         <section role="alert" className="surface rounded-2xl border border-red-200 bg-red-50/70 p-5">
           <p className="text-sm font-medium text-red-800">
-            Dashboard-Daten konnten nicht geladen oder validiert werden.
+            Не вдалося завантажити або перевірити статистику бота.
           </p>
           <p className="mt-1 text-xs text-red-700">{queryError.message}</p>
         </section>

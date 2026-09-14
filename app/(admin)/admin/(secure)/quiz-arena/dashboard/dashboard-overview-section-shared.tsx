@@ -5,7 +5,7 @@ export function formatMetricValue(
   formatter: (currentValue: number) => string,
 ): string {
   if (value === null) {
-    return "Keine Daten";
+    return "Немає даних";
   }
   return formatter(value);
 }

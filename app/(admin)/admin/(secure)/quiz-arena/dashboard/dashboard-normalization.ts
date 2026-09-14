@@ -47,17 +47,17 @@ const DISTRIBUTION_COLORS = [
 ] as const;
 
 const LANGUAGE_LABELS: Record<string, string> = {
-  de: "Deutsch",
-  en: "Englisch",
-  uk: "Ukrainisch",
-  ru: "Russisch",
-  pl: "Polnisch",
-  tr: "Türkisch",
-  ar: "Arabisch",
-  es: "Spanisch",
-  fr: "Französisch",
-  it: "Italienisch",
-  unknown: "Unbekannt",
+  de: "Німецька",
+  en: "Англійська",
+  uk: "Українська",
+  ru: "Російська",
+  pl: "Польська",
+  tr: "Турецька",
+  ar: "Арабська",
+  es: "Іспанська",
+  fr: "Французька",
+  it: "Італійська",
+  unknown: "Невідомо",
 };
 
 function formatDistributionPercent(users: number, totalUsers: number): number {
@@ -79,7 +79,7 @@ function buildDistributionSection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Die Nutzerverteilung konnte nicht validiert werden.",
+      message: "Не вдалося перевірити розподіл користувачів.",
       totalUsers: 0,
       items: [],
     };
@@ -126,7 +126,7 @@ function buildLanguageDistributionSection(
           users: item.users,
         })) ?? null,
     },
-    "Noch keine Sprachcodes für registrierte Nutzer vorhanden.",
+    "Даних про мови зареєстрованих користувачів ще немає.",
   );
 }
 
@@ -177,7 +177,7 @@ function buildMetricSection(
   if (invalidCardCount === cards.length) {
     return {
       status: "invalid",
-      message: `${label} konnten nicht validiert werden.`,
+      message: `${label} не вдалося перевірити.`,
       cards,
     };
   }
@@ -185,7 +185,7 @@ function buildMetricSection(
   if (invalidCardCount > 0 || result.status === "partial") {
     return {
       status: "partial",
-      message: `${invalidCardCount} ${label.toLowerCase()} fehlen oder sind ungültig.`,
+      message: `${invalidCardCount} ${label.toLowerCase()} відсутні або некоректні.`,
       cards,
     };
   }
@@ -208,7 +208,7 @@ function buildHourlyActivitySection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Die Stundenaktivität konnte nicht validiert werden.",
+      message: "Не вдалося перевірити погодинну активність.",
       series: [],
       pointCount: 0,
       missingHours: Array.from({ length: 24 }, (_, hour) => hour),
@@ -234,7 +234,7 @@ function buildHourlyActivitySection(
   if (result.status === "partial") {
     return {
       status: "partial",
-      message: `${series.length} von 24 Berliner Stundenfenstern sind vorhanden. Fehlende Buckets wurden nicht als 0 ergänzt.`,
+      message: `${series.length} із 24 годин за часом Берліна мають дані. Пропущені години не доповнюються нулями.`,
       series,
       pointCount: series.length,
       missingHours,
@@ -247,7 +247,7 @@ function buildHourlyActivitySection(
   if (!hasAnyActivity) {
     return {
       status: "empty",
-      message: "Im gewählten Zeitraum wurden keine aktiven Nutzer erfasst.",
+      message: "За вибраний період активних користувачів не зафіксовано.",
       series,
       pointCount: series.length,
       missingHours,
@@ -275,7 +275,7 @@ function buildRevenueSection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Die Umsatz-Zeitreihe konnte nicht validiert werden.",
+      message: "Не вдалося перевірити дохід за днями.",
       series: [],
       totalRevenueStars: null,
     };
@@ -286,7 +286,7 @@ function buildRevenueSection(
   if (result.data.length === 0) {
     return {
       status: "empty",
-      message: "Für den gewählten Zeitraum wurden keine Umsatzdaten gemeldet.",
+      message: "За вибраний період джерело не надало даних про дохід.",
       series: result.data,
       totalRevenueStars,
     };
@@ -306,7 +306,7 @@ function buildUsersSection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Die Nutzer-Zeitreihe konnte nicht validiert werden.",
+      message: "Не вдалося перевірити статистику користувачів за днями.",
       series: [],
       averageActiveUsersPerDay: null,
     };
@@ -320,7 +320,7 @@ function buildUsersSection(
   if (result.data.length === 0) {
     return {
       status: "empty",
-      message: "Für den gewählten Zeitraum wurden keine täglichen Nutzerdaten gemeldet.",
+      message: "За вибраний період джерело не надало щоденної статистики користувачів.",
       series: result.data,
       averageActiveUsersPerDay,
     };
@@ -360,7 +360,7 @@ function buildFunnelSection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Die Milestone-Schritte konnten nicht validiert werden.",
+      message: "Не вдалося перевірити кроки активності.",
       items: [],
     };
   }
@@ -371,7 +371,7 @@ function buildFunnelSection(
   if (result.status === "partial") {
     return {
       status: "partial",
-      message: `${items.length} von ${FUNNEL_STEP_ORDER.length} Milestone-Schritten sind vorhanden.`,
+      message: `${items.length} von ${FUNNEL_STEP_ORDER.length} кроків активності мають дані.`,
       items,
     };
   }
@@ -379,7 +379,7 @@ function buildFunnelSection(
   if (!hasAnyValue) {
     return {
       status: "empty",
-      message: "Im gewählten Zeitraum wurden keine Milestone-Nutzer erfasst.",
+      message: "За вибраний період користувачів на цих кроках не зафіксовано.",
       items,
     };
   }
@@ -405,7 +405,7 @@ function buildTopProductsSection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Die Produktumsätze konnten nicht validiert werden.",
+      message: "Не вдалося перевірити дохід за продуктами.",
       items: [],
     };
   }
@@ -415,7 +415,7 @@ function buildTopProductsSection(
   if (items.length === 0) {
     return {
       status: "empty",
-      message: "Im gewählten Zeitraum wurden keine Produktumsätze gemeldet.",
+      message: "За вибраний період доходу за продуктами не зафіксовано.",
       items,
     };
   }
@@ -433,7 +433,7 @@ function buildAlertsSection(
   if (result.data === null) {
     return {
       status: "invalid",
-      message: "Warnungen konnten nicht validiert werden.",
+      message: "Не вдалося перевірити попередження.",
       alerts: [],
     };
   }
@@ -441,7 +441,7 @@ function buildAlertsSection(
   if (result.data.length === 0) {
     return {
       status: "empty",
-      message: "Aktuell keine kritischen Warnungen.",
+      message: "Критичних попереджень немає.",
       alerts: result.data,
     };
   }
@@ -455,14 +455,14 @@ function buildAlertsSection(
 
 export function normalizeOverviewData(data: OverviewPayloadSections): DashboardOverviewModel {
   return {
-    generatedAtLabel: new Date(data.generated_at).toLocaleString("de-DE", {
+    generatedAtLabel: new Date(data.generated_at).toLocaleString("uk-UA", {
       timeZone: "Europe/Berlin",
     }),
-    kpiSection: buildMetricSection(data.kpis, KPI_DEFINITIONS, "KPI-Karten"),
+    kpiSection: buildMetricSection(data.kpis, KPI_DEFINITIONS, "Показники"),
     featureUsageSection: buildMetricSection(
       data.feature_usage,
       FEATURE_USAGE_DEFINITIONS,
-      "Feature-Metriken",
+      "Показники функцій",
     ),
     hourlyActivity: buildHourlyActivitySection(data.hourly_activity_series),
     revenueSection: buildRevenueSection(data.revenue_series),
@@ -470,11 +470,11 @@ export function normalizeOverviewData(data: OverviewPayloadSections): DashboardO
     userLanguageSection: buildLanguageDistributionSection(data.user_language_distribution),
     userAgeSection: buildGenericDistributionSection(
       data.user_age_distribution,
-      "Alter kann aktuell nicht ausgewertet werden, weil das Backend kein Alter am Nutzer speichert.",
+      "Вік користувачів не зберігається, тому вікова статистика недоступна.",
     ),
     userGenderSection: buildGenericDistributionSection(
       data.user_gender_distribution,
-      "Geschlecht kann aktuell nicht ausgewertet werden, weil das Backend kein Geschlecht am Nutzer speichert.",
+      "Стать користувачів не зберігається, тому відповідна статистика недоступна.",
     ),
     funnelSection: buildFunnelSection(data.funnel),
     topProductsSection: buildTopProductsSection(data.top_products),

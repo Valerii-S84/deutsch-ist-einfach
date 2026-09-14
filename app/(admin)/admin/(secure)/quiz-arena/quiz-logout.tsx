@@ -20,5 +20,5 @@ export function QuizLogout() {
     } catch { setFailed(true); } finally { setPending(false); }
   }
   return <div className="flex flex-wrap gap-4"><button disabled={pending} onClick={refresh}>Сесію бота оновити</button><button disabled={pending} onClick={logout}>Вийти з Quiz Arena Bot</button>
-    {failed ? <p role="alert">Backend не підтвердив операцію із сесією. Можна завершити власну сесію сайту через «Abmelden».</p> : null}</div>;
+    {failed ? <p role="alert">Сервер не підтвердив операцію із сесією. Можна завершити власну сесію сайту через «Вийти».</p> : null}</div>;
 }

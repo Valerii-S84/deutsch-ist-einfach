@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSiteAdminSession, SITE_ADMIN_SESSION_COOKIE } from "@/lib/server/site-admin-auth";
+import { proxyQuizArena } from "@/lib/server/quiz-arena-proxy";
 import { readSiteAnalyticsOverview } from "@/lib/server/site-analytics-store";
 import { POST as login } from "./route";
 import { POST as logout } from "../logout/route";
@@ -31,6 +32,7 @@ beforeEach(() => {
   vi.stubEnv("API_INTERNAL_URL", "");
   vi.stubEnv("NEXT_PUBLIC_API_URL", "");
   vi.stubEnv("QUIZ_BANK_API_BASE_URL", "");
+  vi.stubEnv("QUIZ_ARENA_ADMIN_URL", "");
   vi.stubGlobal("fetch", vi.fn(() => { throw new Error("No backend allowed"); }));
   vi.useFakeTimers();
   clock += 120_000;
@@ -46,6 +48,48 @@ afterEach(() => {
 });
 
 describe("local admin login/logout boundary with Quiz Arena OFF", () => {
+  it("opens the configured bot session with the same owner login and reads its statistics", async () => {
+    vi.stubEnv("QUIZ_ARENA_ADMIN_URL", "https://quiz.example/api");
+    const backend = vi.fn().mockResolvedValueOnce(new Response('{"requires_2fa":false}', {
+      headers: { "Set-Cookie": "qa_admin_access=synthetic-access; Secure; HttpOnly" },
+    })).mockResolvedValueOnce(new Response('{"period":"7d"}'));
+    vi.stubGlobal("fetch", backend);
+    const response = await login(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(backend.mock.calls[0][0]).toBe("https://quiz.example/api/admin/auth/login");
+    expect(JSON.parse(backend.mock.calls[0][1].body)).toEqual(credentials);
+    const site = response.cookies.get(SITE_ADMIN_SESSION_COOKIE)!;
+    const quiz = response.cookies.get("quiz_arena_session")!;
+    expect(quiz.path).toBe("/api/admin/quiz-arena");
+    expect(response.headers.get("set-cookie")).not.toContain("synthetic-access");
+    const read = await proxyQuizArena(new NextRequest(`${origin}/api/admin/quiz-arena/overview?period=7d`, {
+      headers: { cookie: `${site.name}=${site.value}; ${quiz.name}=${quiz.value}` },
+    }), "overview");
+    expect(read.status).toBe(200);
+    expect(backend.mock.calls[1][1].headers.get("cookie")).toBe("qa_admin_access=synthetic-access");
+    expect(JSON.parse(backend.mock.calls[0][1].body).password).toBe(credentials.password);
+  });
+
+  it("retains the backend second-factor challenge during the combined login", async () => {
+    vi.stubEnv("QUIZ_ARENA_ADMIN_URL", "https://quiz.example/api");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response('{"requires_2fa":true}')));
+    const response = await login(request());
+    expect(await response.json()).toEqual({ ok: true, requires_quiz_2fa: true });
+    expect(response.cookies.get(SITE_ADMIN_SESSION_COOKIE)).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([401, 403, 503])("keeps the site available when the configured bot denies login or fails (%s)", async status => {
+    vi.stubEnv("QUIZ_ARENA_ADMIN_URL", "https://quiz.example/api");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("private diagnostic", { status })));
+    const response = await login(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(response.cookies.get("quiz_arena_session")).toBeUndefined();
+    expect(getSiteAdminSession(response.cookies.get(SITE_ADMIN_SESSION_COOKIE)?.value)).not.toBeNull();
+  });
+
   it("creates a production cookie, authorizes Analytics, and removes access on logout", async () => {
     const response = await login(request());
     expect(response.status).toBe(200);
