@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { chromium } from '../../.verification/browser/node_modules/playwright/index.mjs';
 const site = 'https://deutschmit.de', shorts = 'https://www.shortsblockerkids.de';
 const ssh = command => execFileSync('ssh', ['-o','BatchMode=yes','-o','ConnectTimeout=12','-o','StrictHostKeyChecking=yes','root@46.225.181.45',command], { encoding:'utf8', timeout:30000 });
 const visitor = randomUUID();
 const result = { visitor, passed:false, separate_bot_login:false };
+appendFileSync('.verification/admin-test-visitors.jsonl', JSON.stringify({visitor,started_at:new Date().toISOString()}) + '\n');
 const browser = await chromium.launch({ channel:'msedge', headless:true });
 let wroteEvents = false;
 try {
@@ -27,13 +28,27 @@ try {
   page.on('response', response => {
     if (response.url() === shorts + '/api/website-events') deliveries.push(response.status());
   });
-  await page.goto(shorts, {waitUntil:'networkidle'});
+  const acknowledge = (name, field, value) => page.waitForResponse(response => {
+    if (response.url() !== shorts + '/api/website-events' || response.status() !== 200) return false;
+    return JSON.parse(response.request().postData() ?? '{}').events?.some(event => event.event_name === name && event[field] === value);
+  });
+  const firstView = acknowledge('page_view', 'path', '/');
+  await page.goto(shorts, {waitUntil:'domcontentloaded'});
+  await firstView;
+  const previewClick = acknowledge('element_click', 'element_id', 'preview_primary');
   await page.locator('button.mock-primary').click();
-  await Promise.all([page.waitForURL('**/support/**'), page.locator('a[href="/support"]').first().click()]);
-  await page.waitForLoadState('networkidle');
+  await previewClick;
+  const supportView = acknowledge('page_view', 'path', '/support/');
+  // Caddy rewrites /support internally; the browser URL need not gain a slash.
+  // Check navigation-click delivery in the committed admin events below.
+  await Promise.all([
+    supportView,
+    page.waitForURL(url => url.hostname === 'www.shortsblockerkids.de' && /^\/support\/?$/.test(url.pathname), {waitUntil:'domcontentloaded'}),
+    page.locator('a[href="/support"]').first().click(),
+  ]);
   assert.equal(events.filter(event => event.event_name === 'page_view').length, 2);
   assert.equal(events.filter(event => event.event_name === 'element_click').length, 2);
-  assert.ok(deliveries.length >= 4 && deliveries.every(status => status === 200), 'all browser deliveries acknowledged');
+  assert.ok(deliveries.length >= 3 && deliveries.every(status => status === 200), 'observed deliveries acknowledged; navigation click checked in storage');
   const session = events.find(event => event.event_name === 'page_view').session_id;
   // Existing owner credentials remain in memory and are never logged or saved.
   const owner = JSON.parse(ssh("docker exec quiz-arena-site-frontend-1 node -e 'process.stdout.write(JSON.stringify({email:process.env.SITE_ADMIN_EMAIL,password:process.env.SITE_ADMIN_PASSWORD}))'"));
@@ -46,7 +61,7 @@ try {
   }
   const bot = await context.request.get(site + '/api/admin/quiz-arena/overview?days=7');
   assert.equal(bot.status(),200,'bot statistics after the same owner login');
-  await page.goto(site + '/admin/shorts-blocker-kids?days=7&session=' + session, {waitUntil:'networkidle'});
+  await page.goto(site + '/admin/shorts-blocker-kids?days=7&session=' + session, {waitUntil:'domcontentloaded'});
   await page.getByRole('heading',{name:'Послідовність дій відвідування'}).waitFor();
   const detail = await page.locator('#visit').innerText();
   assert.equal((detail.match(/Перегляд сторінки/g) ?? []).length,2);
