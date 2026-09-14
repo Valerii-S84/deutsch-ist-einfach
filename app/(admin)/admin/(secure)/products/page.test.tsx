@@ -22,7 +22,7 @@ it("links every registered product without a backend dependency", () => {
     expect(html).toContain(`href="${product.href}"`);
     expect(html).toContain(product.label);
   }
-  expect(html.match(/Джерело не підключено/g)).toHaveLength(2);
+  expect(html.match(/Джерело не підключено/g)).toHaveLength(1);
 });
 it("keeps website analytics and requests reachable", async () => {
   expect(WebsiteEntry).toThrow("redirect");

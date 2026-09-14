@@ -89,6 +89,6 @@ it("keeps the existing Website requests page on the separate site source", async
   await show(<SiteRequests />);
   await until(() => expect(container.textContent).toContain("Synthetic owner request · test@example.test"));
   expect(select("Джерело заявок").value).toBe("site");
-  expect(fetchMock).toHaveBeenCalledWith("/api/admin/contact-requests?page=1", expect.any(Object));
+  expect(fetchMock).toHaveBeenCalledWith("/api/admin/contact-requests?page=1&scope=production", expect.any(Object));
   expect(api.get).not.toHaveBeenCalled();
 });

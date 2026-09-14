@@ -21,6 +21,7 @@ export async function insertEvents(sql: AnalyticsDatabase, events: AnalyticsEven
 }
 
 export async function cleanRetention(sql: AnalyticsDatabase) {
+  await sql`DELETE FROM shorts_website_events WHERE occurred_at < statement_timestamp() - interval '90 days' OR (is_test AND received_at < statement_timestamp() - interval '1 day')`;
   const result = await sql`DELETE FROM analytics_events WHERE product_id = ${ANALYTICS_PRODUCT} AND occurred_at < statement_timestamp() - interval '90 days'`;
   return { deleted: result.count };
 }

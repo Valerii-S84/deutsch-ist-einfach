@@ -310,7 +310,7 @@ describe("admin login a11y behavior", () => {
     const { container, cleanup } = renderInContainer(<AdminLoginPage />);
 
     try {
-      clickByText(container, "Sign In");
+      clickByText(container, "Увійти");
 
       await act(async () => {
         await Promise.resolve();
