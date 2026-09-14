@@ -1,4 +1,4 @@
-import { shortsBatchSchema } from "../../../lib/analytics/shorts-contract";
+import { isShortsSessionId, shortsBatchSchema } from "../../../lib/analytics/shorts-contract";
 import { readAnalyticsJson } from "../../../lib/analytics/http";
 import type { AnalyticsDatabase } from "./database";
 
@@ -16,7 +16,7 @@ export async function handleShorts(request: Request, sql: AnalyticsDatabase): Pr
   if (url.pathname !== "/internal/products/shorts-blocker-kids/report" || request.method !== "GET") return json({ error: "NOT_FOUND" }, 404);
   const params = url.searchParams;
   const days = Number(params.get("days") ?? 7), page = Number(params.get("page") ?? 1), session = params.get("session");
-  if ([...params.keys()].some(key => !["days", "page", "session"].includes(key) || params.getAll(key).length !== 1) || ![7, 30, 90].includes(days) || !Number.isSafeInteger(page) || page < 1 || page > 100_000 || (session && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(session))) return json({ error: "invalid_query" }, 400);
+  if ([...params.keys()].some(key => !["days", "page", "session"].includes(key) || params.getAll(key).length !== 1) || ![7, 30, 90].includes(days) || !Number.isSafeInteger(page) || page < 1 || page > 100_000 || (session !== null && !isShortsSessionId(session))) return json({ error: "invalid_query" }, 400);
   const report = await sql.begin("isolation level repeatable read read only", async tx => {
     const [clock] = await tx`SELECT statement_timestamp() AS now`;
     const now = new Date(clock.now), start = new Date(now.getTime() - days * 86400_000);

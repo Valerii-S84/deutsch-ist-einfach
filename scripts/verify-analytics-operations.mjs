@@ -9,6 +9,7 @@ import { performance } from "node:perf_hooks";
 import postgres from "postgres";
 import reports from "../services/analytics/dist/services/analytics/src/reports.js";
 import maintenance from "../services/analytics/dist/services/analytics/src/database.js";
+import migrations from "../services/analytics/dist/services/analytics/src/migrate.js";
 
 const output = ".verification/website-analytics/v1";
 mkdirSync(`${output}/ops-private`, { recursive: true });
@@ -28,7 +29,7 @@ async function check(name, fn) {
 }
 try {
   await sql`CREATE SCHEMA ${sql(schema)}`;
-  await sql.unsafe(readFileSync('services/analytics/db/migrations/0001_create_analytics_events.sql', 'utf8'));
+  await migrations.migrate(sql, resolve('services/analytics/db/migrations'));
   environment.postgres = (await sql`SELECT version() AS version`)[0].version;
   const publicBefore = (await sql`SELECT count(*)::int AS count FROM public.analytics_events`)[0].count;
   if (!process.argv.includes('--performance-only')) await check('backup restore stays quarantined until retention and deletion journal are replayed', async () => {
@@ -36,25 +37,34 @@ try {
     await sql`INSERT INTO analytics_events (product_id,event_id,event_name,schema_version,source,visitor_id,session_id,page_view_id,sequence,occurred_at,path,metadata)
       SELECT 'deutschmit',gen_random_uuid(),'page_view',1,'browser',v.visitor,gen_random_uuid(),gen_random_uuid(),1,statement_timestamp()-v.age,'/','{}'::jsonb
       FROM (VALUES (${removed}::uuid,interval '1 day'),(${kept}::uuid,interval '91 days'),(${kept}::uuid,interval '1 day')) v(visitor,age)`;
+    await sql`INSERT INTO shorts_website_events (event_id,visitor_id,session_id,page_view_id,event_name,occurred_at,received_at,sequence,path,device,is_test)
+      SELECT gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'page_view',statement_timestamp()-v.age,statement_timestamp()-v.received_age,1,'/','desktop',v.is_test
+      FROM (VALUES (interval '91 days',interval '91 days',false),(interval '1 day',interval '1 day',false),(interval '2 days',interval '2 days',true),(interval '1 hour',interval '1 hour',true)) v(age,received_age,is_test)`;
     docker(['exec',container,'pg_dump','-U','analytics_user','-d','deutschmit_analytics','-n',schema,'-Fc','--no-owner','--no-privileges','-f',dump]);
     const journal = `${output}/ops-private/${schema}-deletions.jsonl`;
     appendFileSync(journal, JSON.stringify({ product_id: 'deutschmit', visitor_id: removed, requested_at: new Date().toISOString() })+'\n', { mode: 0o600 });
-    assert.equal((await maintenance.cleanRetention(sql)).deleted, 1);
+    assert.equal((await maintenance.cleanRetention(sql)).deleted, 3, 'one deutschmit row plus two Shorts rows');
     assert.equal((await maintenance.deleteVisitor(sql, 'deutschmit', removed)).deleted, 1);
     await sql`DROP SCHEMA ${sql(schema)} CASCADE`;
     docker(['exec',container,'pg_restore','-U','analytics_user','-d','deutschmit_analytics','--no-owner','--no-privileges',dump]);
     assert.equal((await sql`SELECT count(*)::int AS count FROM analytics_events`)[0].count, 3);
+    assert.equal((await sql`SELECT count(*)::int AS count FROM shorts_website_events`)[0].count, 4);
     // This schema is never served by the running service: replay happens before exposure.
-    assert.equal((await maintenance.cleanRetention(sql)).deleted, 1);
+    assert.equal((await maintenance.cleanRetention(sql)).deleted, 3, 'retention replay includes both products');
     for (const line of readFileSync(journal,'utf8').trim().split('\n')) {
       const deletion = JSON.parse(line); assert.equal(deletion.product_id,'deutschmit');
       await maintenance.deleteVisitor(sql,deletion.product_id,deletion.visitor_id);
     }
     const remaining = await sql`SELECT visitor_id FROM analytics_events`;
     assert.deepEqual(remaining.map(row=>row.visitor_id),[kept]);
+    assert.deepEqual((await sql`SELECT is_test FROM shorts_website_events ORDER BY is_test`).map(row=>row.is_test),[false,true]);
+    await sql`INSERT INTO shorts_website_events (event_id,visitor_id,session_id,page_view_id,event_name,occurred_at,sequence,path,device)
+      VALUES (gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'page_view',statement_timestamp()-interval '91 days',1,'/','desktop')`;
+    assert.equal((await maintenance.cleanRetention(sql)).deleted, 1, 'Shorts-only deletion must not report zero');
+    assert.equal((await maintenance.cleanRetention(sql)).deleted, 0, 'repeated cleanup is idempotent');
     assert.equal((await sql`SELECT count(*)::int AS count FROM public.analytics_events`)[0].count,publicBefore);
     docker(['exec',container,'rm','--',dump]);
-    return { backupRows: 3, restoredQuarantinedRows: 3, releasedRows: 1, expiredRemoved: 1, deletionReapplied: 1, publicRowsUnchanged: true, journal };
+    return { backupRows: 7, restoredQuarantinedRows: 7, releasedRows: 3, expiredRemoved: 3, shortsOnlyDeleted: 1, deletionReapplied: 1, publicRowsUnchanged: true, journal };
   });
   if (!process.argv.includes('--performance-only') && !process.argv.includes('--retry-failed')) await check('reversed delivery and clock skew retain sequence; timeout does not add active time', async () => {
     await sql`TRUNCATE analytics_events`;

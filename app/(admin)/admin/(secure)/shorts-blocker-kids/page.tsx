@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { readShortsStatistics } from "@/lib/server/shorts-statistics";
+import { isShortsSessionId } from "@/lib/analytics/shorts-contract";
 
 export const dynamic = "force-dynamic";
 const pages: Record<string, string> = { "/": "Головна", "/privacy/": "Конфіденційність", "/support/": "Підтримка", "/terms/": "Умови користування" };
@@ -11,7 +12,7 @@ export default async function ShortsStatistics({ searchParams }: { searchParams:
   const params = await searchParams;
   const days = [7, 30, 90].includes(Number(params.days)) ? Number(params.days) : 7;
   const page = /^\d{1,5}$/.test(params.page ?? "") && Number(params.page) > 0 ? Number(params.page) : 1;
-  const session = /^[0-9a-f-]{36}$/i.test(params.session ?? "") ? params.session : undefined;
+  const session = isShortsSessionId(params.session) ? params.session : undefined;
   const report = await readShortsStatistics(days, page, session).catch(() => null);
   return <main className="space-y-6">
     <header className="surface space-y-3 rounded-2xl p-6">
