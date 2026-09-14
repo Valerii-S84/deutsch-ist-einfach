@@ -2,7 +2,7 @@ export const ANALYTICS_CONSENT_STORAGE_KEY = "quiz_arena_public_analytics_consen
 export const PUBLIC_VISITOR_ID_STORAGE_KEY = "quiz_arena_public_visitor_id_v1";
 export const PUBLIC_VISITOR_AGE_STORAGE_KEY = "quiz_arena_public_visitor_age_v1";
 export const WEBSITE_CONSENT_STORAGE_KEY = "deutschmit_analytics_consent_v2";
-export type AnalyticsConsent = "pending" | "granted" | "denied";
+export type AnalyticsConsent = "pending" | "automatic" | "granted" | "denied";
 export type AnalyticsMode = "legacy" | "new" | "off";
 
 export function getAnalyticsMode(): AnalyticsMode {

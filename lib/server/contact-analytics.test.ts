@@ -40,3 +40,12 @@ it("bounds even an adapter that ignores abort at 500 ms, without retry", async (
   expect(fetch).toHaveBeenCalledOnce();
   expect(console.warn).toHaveBeenCalledExactlyOnceWith("analytics_contact_delivery_failed");
 });
+
+it("accepts automatic form context and emits the server confirmation", async () => {
+  await sendContactSuccess({ ...syntheticContactContext("student"), consent: "automatic" });
+  expect(fetch).toHaveBeenCalledOnce();
+  const [, init] = vi.mocked(fetch).mock.calls[0];
+  const [event] = parseAnalyticsBatch(JSON.parse(String(init?.body)), "server");
+  expect(event.event_name).toBe("form_success");
+  expect(event.metadata).not.toHaveProperty("consent");
+});

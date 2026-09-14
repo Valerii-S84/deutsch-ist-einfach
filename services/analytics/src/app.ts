@@ -6,6 +6,7 @@ import { insertEvents, type AnalyticsDatabase } from "./database";
 import { readOverview, readSession, readSessions } from "./reports";
 import { readPages, readEvents, readTraffic, readConversions } from "./application-reports";
 import { parseReportSelection } from "../../../lib/analytics/report-selection";
+import { handleShorts } from "./shorts";
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
@@ -18,6 +19,7 @@ export function createAnalyticsHandler(sql: AnalyticsDatabase, key: string) {
     if (!timingSafeEqual(expected, actual)) return json({ error: "AUTH_REQUIRED" }, 401);
     const url = new URL(request.url);
     try {
+      if (url.pathname.startsWith("/internal/products/shorts-blocker-kids/")) return await handleShorts(request, sql);
       if (url.pathname === "/health" && request.method === "GET") {
         if (url.search) return json({ error: "invalid_query" }, 400);
         await sql`SELECT 1 FROM analytics_events LIMIT 1`;

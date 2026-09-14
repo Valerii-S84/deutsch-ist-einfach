@@ -40,7 +40,7 @@ it.each(['pages', 'events', 'traffic', 'conversions'] as const)('%s links use ty
     expect(container.textContent).not.toContain('789'); expect(container.textContent).not.toContain('678');
     await act(async () => finish(fixture(name, 30, 890)));
     await vi.waitFor(() => expect(container.textContent).toContain('890'));
-    await act(async () => { [...container.querySelectorAll('button')].find(button => button.textContent === 'Aktualisieren')!.click(); });
+    await act(async () => { [...container.querySelectorAll('button')].find(button => button.textContent === 'Оновити')!.click(); });
     await vi.waitFor(() => expect(container.querySelector('[role="alert"]')).not.toBeNull()); expect(container.textContent).not.toContain('890');
   } finally { act(() => root.unmount()); client.clear(); container.remove(); }
 });
@@ -51,11 +51,11 @@ it('hydrates a report link into the same Sessions request', async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const container = document.createElement('div'); const root = createRoot(container);
   try { await act(async () => root.render(<QueryClientProvider client={client}><SessionsPage /></QueryClientProvider>));
-    expect(fetchDeutschmitSessions).toHaveBeenCalledWith(expect.objectContaining({ days: 30, selection })); expect(container.textContent).toContain('amazon');
+    expect(fetchDeutschmitSessions).toHaveBeenCalledWith(expect.objectContaining({ days: 30, selection })); expect(container.textContent).toContain('Amazon');
   } finally { act(() => root.unmount()); client.clear(); }
 });
 it('preserves six reports, legacy and requests; renders explicit ratio denominators', () => {
   const markup = renderToStaticMarkup(<DeutschmitNavigation active="pages" />);
   for (const path of ['overview', 'sessions', 'pages', 'events', 'traffic', 'conversions', 'requests']) expect(markup).toContain(`/admin/deutschmit/${path}`);
-  expect(markup).toContain('/admin/dashboard'); expect(reportRatio(0, 0)).toBe('0 / 0 · Nicht definiert'); expect(reportRatio(1, 3)).toBe('1 / 3 · 33,3 %');
+  expect(markup).toContain('/admin/dashboard'); expect(reportRatio(0, 0)).toBe('0 / 0 · Не визначено'); expect(reportRatio(1, 3)).toBe('1 / 3 · 33,3 %');
 });

@@ -8,9 +8,9 @@ type MetricDefinition = {
 };
 
 export const PERIOD_OPTIONS = [
-  { value: "7d", label: "7 Tage" },
-  { value: "30d", label: "30 Tage" },
-  { value: "90d", label: "90 Tage" },
+  { value: "7d", label: "7 днів" },
+  { value: "30d", label: "30 днів" },
+  { value: "90d", label: "90 днів" },
 ] as const;
 
 export const OVERVIEW_PERIODS = PERIOD_OPTIONS.map((option) => option.value) as [
@@ -29,74 +29,74 @@ export const FUNNEL_STEP_ORDER = [
 export const KPI_DEFINITIONS: MetricDefinition[] = [
   {
     key: "dau",
-    label: "Aktive Nutzer (24h)",
-    hint: "Distinct aktive Nutzer in den letzten 24 Stunden.",
+    label: "Активні за 24 години",
+    hint: "Окремі користувачі з активністю за останні 24 години.",
     unit: "count",
   },
   {
     key: "wau",
-    label: "Aktive Nutzer (7 Tage)",
-    hint: "Wie viele Nutzer in den letzten 7 Tagen aktiv waren.",
+    label: "Активні за 7 днів",
+    hint: "Окремі користувачі з активністю за останні 7 днів.",
     unit: "count",
   },
   {
     key: "mau",
-    label: "Aktive Nutzer (30 Tage)",
-    hint: "Wie viele Nutzer in den letzten 30 Tagen aktiv waren.",
+    label: "Активні за 30 днів",
+    hint: "Окремі користувачі з активністю за останні 30 днів.",
     unit: "count",
   },
   {
     key: "new_users",
-    label: "Neue Nutzer",
-    hint: "Neue Registrierungen im gewählten Zeitraum.",
+    label: "Нові користувачі",
+    hint: "Реєстрації за вибраний період.",
     unit: "count",
   },
   {
     key: "revenue_stars",
-    label: "Umsatz in Sternen",
-    hint: "Gesamter Umsatz in ⭐.",
+    label: "Дохід у Stars",
+    hint: "Дохід у Telegram Stars.",
     unit: "stars",
   },
   {
     key: "revenue_eur",
-    label: "Umsatz in Euro",
-    hint: "Geschätzter Umsatz in €.",
+    label: "Дохід у євро",
+    hint: "Оцінка доходу в євро.",
     unit: "eur",
   },
   {
     key: "active_subscriptions",
-    label: "Aktive Premium-Abos",
-    hint: "Aktive Premium-Abos jetzt.",
+    label: "Чинні підписки Premium",
+    hint: "Чинні підписки Premium на поточну мить.",
     unit: "count",
   },
   {
     key: "retention_d1",
-    label: "Rückkehr am nächsten Tag",
-    hint: "Anteil neuer Nutzer, die am Folgetag zurückkommen.",
+    label: "Повернення наступного дня",
+    hint: "Частка нових користувачів, які повернулися наступного дня.",
     unit: "percent",
   },
   {
     key: "retention_d7",
-    label: "Rückkehr nach 7 Tagen",
-    hint: "Anteil neuer Nutzer, die nach 7 Tagen zurückkommen.",
+    label: "Повернення через 7 днів",
+    hint: "Частка нових користувачів, які повернулися через 7 днів.",
     unit: "percent",
   },
   {
     key: "start_users",
-    label: "Start-Basis (aktuell neu)",
-    hint: "Backend nutzt hier derzeit neue Nutzer statt echter /start-Events.",
+    label: "Нові користувачі для розрахунку часток",
+    hint: "Джерело рахує нових користувачів; це не кількість натискань команди /start.",
     unit: "count",
   },
   {
     key: "conversion_start_to_quiz",
-    label: "Neue Nutzer zu erstem Quiz",
-    hint: "Aktuelle Backend-Definition: Anteil neuer Nutzer mit erstem Quiz im Zeitraum.",
+    label: "Нові користувачі з першою вікториною",
+    hint: "Частка нових користувачів, які вперше пройшли вікторину за період.",
     unit: "percent",
   },
   {
     key: "conversion_quiz_to_purchase",
-    label: "Von Quiz zu Kauf",
-    hint: "Wie viele aktive Quiz-Spieler auch kaufen.",
+    label: "Від вікторини до покупки",
+    hint: "Частка активних учасників вікторин, які також здійснили покупку.",
     unit: "percent",
   },
 ];
@@ -104,57 +104,57 @@ export const KPI_DEFINITIONS: MetricDefinition[] = [
 export const FEATURE_USAGE_DEFINITIONS: MetricDefinition[] = [
   {
     key: "duel_created_users",
-    label: "Duell erstellt",
-    hint: "Nutzer, die ein Freundesduell erstellt haben.",
+    label: "Створили дуель",
+    hint: "Користувачі, які створили дружню дуель.",
     unit: "count",
   },
   {
     key: "duel_completed_users",
-    label: "Duell abgeschlossen",
-    hint: "Nutzer mit abgeschlossenem Freundesduell.",
+    label: "Завершили дуель",
+    hint: "Користувачі із завершеною дружньою дуеллю.",
     unit: "count",
   },
   {
     key: "duel_completion_rate",
-    label: "Duell-Abschlussrate",
-    hint: "Distinct Nutzer mit abgeschlossenem Duell / distinct Nutzer mit erstelltem Duell.",
+    label: "Частка завершення дуелей",
+    hint: "Окремі користувачі із завершеною дуеллю / окремі користувачі зі створеною дуеллю.",
     unit: "percent",
   },
   {
     key: "referral_shared_users",
-    label: "Einladungslink geteilt",
-    hint: 'Nutzer, die "Freund einladen" geteilt haben.',
+    label: "Поділилися запрошенням",
+    hint: 'Користувачі, die "Freund einladen" geteilt haben.',
     unit: "count",
   },
   {
     key: "referral_referrers_started",
-    label: "Referrer mit neuen Starts",
-    hint: "Nutzer, bei denen ein neuer Freund per Code gestartet ist.",
+    label: "Запросили нових користувачів",
+    hint: "Користувачі, за кодом яких приєднався новий друг.",
     unit: "count",
   },
   {
     key: "daily_cup_registered_users",
-    label: "Daily Cup registriert",
-    hint: "Nutzer mit Registrierung im Daily Cup.",
+    label: "Учасники щоденного кубка",
+    hint: "Користувачі, зареєстровані у щоденному кубку.",
     unit: "count",
   },
 ];
 
 export const FUNNEL_STEP_LABELS: Record<string, string> = {
-  Start: "Neue Nutzer",
-  "First Quiz": "Erstes Quiz",
+  Start: "Нові користувачі",
+  "First Quiz": "Перша вікторина",
   "Streak 3+": "Streak 3+",
-  Purchase: "Erstkauf",
+  Purchase: "Перша покупка",
 };
 
 export const PRODUCT_LABELS: Record<string, string> = {
-  ENERGY_10: "Energie +10",
-  STREAK_SAVER_20: "Streak Saver",
-  FRIEND_CHALLENGE_5: "Duell-Ticket",
-  PREMIUM_STARTER: "Premium Starter",
-  PREMIUM_MONTH: "Premium Monat",
-  PREMIUM_SEASON: "Premium Season",
-  PREMIUM_YEAR: "Premium Jahr",
+  ENERGY_10: "Енергія +10",
+  STREAK_SAVER_20: "Збереження серії",
+  FRIEND_CHALLENGE_5: "Квиток на дуель",
+  PREMIUM_STARTER: "Стартовий Premium",
+  PREMIUM_MONTH: "Premium на місяць",
+  PREMIUM_SEASON: "Сезонний Premium",
+  PREMIUM_YEAR: "Premium на рік",
 };
 
 export const CHART_AXIS_TICK = {

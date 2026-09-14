@@ -51,7 +51,7 @@ export const trafficFields = {
 };
 // This optional transport context is parsed separately from the contact record.
 export const contactAnalyticsContextSchema = z.object({
-  consent: z.literal("granted"), schema_version: z.literal(1),
+  consent: z.enum(["granted", "automatic"]), schema_version: z.literal(1),
   visitor_id: analyticsId, session_id: analyticsId, page_view_id: analyticsId,
   path: pathSchema, form_id: z.enum(["student", "partner"]),
   form_instance_id: analyticsId, submission_attempt_id: analyticsId,

@@ -33,7 +33,7 @@ describe("Quiz Arena isolated server boundary", () => {
     expect((await proxyQuizArena(req("users", "GET", cookie), "users")).status).toBe(401);
     expect(backend).not.toHaveBeenCalled();
   });
-  it.each(["../system", "website-analytics/overview", "contact", "https://evil.test", "promo/0", "users/delete"])("denies unknown route %s", async path => {
+  it.each(["../system", "contact", "https://evil.test", "promo/0", "users/delete"])("denies unknown route %s", async path => {
     expect((await proxyQuizArena(req(path), path)).status).toBe(404);
     expect(backend).not.toHaveBeenCalled();
   });

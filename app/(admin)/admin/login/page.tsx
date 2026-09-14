@@ -6,8 +6,8 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email("Введіть коректну електронну адресу."),
+  password: z.string().min(6, "Пароль має містити щонайменше 6 символів."),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -33,7 +33,8 @@ export default function AdminLoginPage() {
         body: JSON.stringify(values),
       });
       if (response.ok) {
-        window.location.href = "/admin/products";
+        const result = await response.json();
+        window.location.href = result.requires_quiz_2fa ? "/admin/quiz-arena/login?step=2fa" : "/admin/products";
       } else if (response.status === 429) {
         setErrorMessage("Занадто багато спроб входу. Спробуйте пізніше.");
       } else if (response.status === 403) {
@@ -41,7 +42,7 @@ export default function AdminLoginPage() {
       } else if (response.status === 503) {
         setErrorMessage("Вхід адміністратора тимчасово недоступний.");
       } else {
-        setErrorMessage("Не вдалося увійти. Перевір email/password.");
+        setErrorMessage("Не вдалося увійти. Перевірте електронну адресу та пароль.");
       }
     } catch {
       setErrorMessage("Мережеві проблеми. Перевірте з'єднання.");
@@ -72,7 +73,7 @@ export default function AdminLoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
       <div className="surface rounded-2xl p-6">
-        <h1 className="text-3xl">Admin Login</h1>
+        <h1 className="text-3xl">Вхід адміністратора</h1>
         <form
           className="mt-5 space-y-4"
           onSubmit={form.handleSubmit(onSubmit)}
@@ -81,14 +82,14 @@ export default function AdminLoginPage() {
         >
           <div>
             <label htmlFor="admin-email" className="mb-1 block text-sm font-medium text-white">
-              Email
+              Електронна адреса
             </label>
             <input
               id="admin-email"
               type="email"
               autoComplete="username"
               className="w-full rounded-xl border border-ember/20 bg-white px-3 py-2"
-              placeholder="Email"
+              placeholder="Електронна адреса"
               aria-invalid={form.formState.errors.email ? "true" : "false"}
               aria-describedby={form.formState.errors.email ? "admin-email-error" : undefined}
               {...form.register("email")}
@@ -105,14 +106,14 @@ export default function AdminLoginPage() {
               htmlFor="admin-password"
               className="mb-1 block text-sm font-medium text-white"
             >
-              Password
+              Пароль
             </label>
             <input
               id="admin-password"
               type="password"
               autoComplete="current-password"
               className="w-full rounded-xl border border-ember/20 bg-white px-3 py-2"
-              placeholder="Password"
+              placeholder="Пароль"
               aria-invalid={form.formState.errors.password ? "true" : "false"}
               aria-describedby={form.formState.errors.password ? "admin-password-error" : undefined}
               {...form.register("password")}
@@ -129,7 +130,7 @@ export default function AdminLoginPage() {
             className="w-full rounded-xl bg-ember px-3 py-2 text-sand disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting || form.formState.isSubmitting}
           >
-            {isSubmitting || form.formState.isSubmitting ? "Signin..." : "Sign In"}
+            {isSubmitting || form.formState.isSubmitting ? "Вхід…" : "Увійти"}
           </button>
         </form>
         {errorMessage ? (

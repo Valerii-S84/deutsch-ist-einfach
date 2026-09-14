@@ -34,6 +34,7 @@ async function insert(rows: AnalyticsEvent[]) {
 beforeAll(async () => {
   await sql`CREATE SCHEMA ${sql(schema)}`;
   await sql.unsafe(readFileSync('services/analytics/db/migrations/0001_create_analytics_events.sql', 'utf8'));
+  await sql.unsafe(readFileSync('services/analytics/db/migrations/0002_reporting_exclusions.sql', 'utf8'));
 });
 afterAll(async () => { await sql`DROP SCHEMA ${sql(schema)} CASCADE`; await sql.end(); });
 beforeEach(async () => {

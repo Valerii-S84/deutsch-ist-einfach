@@ -69,3 +69,12 @@ describe("site analytics overview API", () => {
     expect(await response.json()).toEqual({ error: "analytics_unavailable" });
   });
 });
+
+it("routes configured historical data to the cookie-scoped Quiz Arena gateway", async () => {
+  vi.stubEnv("SITE_LEGACY_ANALYTICS_SOURCE", "quiz-arena");
+  const response = await GET(request("?days=90"));
+  expect(response.status).toBe(307);
+  expect(response.headers.get("Location")).toBe("/api/admin/quiz-arena/website-analytics/overview?days=90");
+  expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(readSiteAnalyticsOverview).not.toHaveBeenCalled();
+});

@@ -41,7 +41,7 @@ export class WebsiteAnalytics {
   private timer?: ReturnType<typeof setInterval>;
   private forms = new Map<AnalyticsFormId, { id: string; visitor: string; attempt?: string }>();
 
-  constructor(private allowed: () => boolean) {
+  constructor(private allowed: () => boolean, private collectionBasis: () => "granted" | "automatic" = () => "granted") {
     this.identity = new AnalyticsIdentity(allowed);
     this.transport = new AnalyticsTransport(() => !this.stopped && allowed() && isCurrentVisitor(this.visitor));
   }
@@ -208,7 +208,7 @@ export class WebsiteAnalytics {
       instance.attempt = crypto.randomUUID();
       const session = this.identity.session;
       const context: ContactAnalyticsContext = {
-        consent: "granted", schema_version: 1, visitor_id: session.visitor, session_id: session.id,
+        consent: this.collectionBasis(), schema_version: 1, visitor_id: session.visitor, session_id: session.id,
         page_view_id: this.page.id, path: this.page.path, ...session.traffic,
         form_id: form, form_instance_id: instance.id, submission_attempt_id: instance.attempt,
       };

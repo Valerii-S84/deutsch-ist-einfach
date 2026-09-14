@@ -7,13 +7,13 @@ import { PUBLIC_SITE_NAME, getPublicContactEmail } from "@/lib/public-site-confi
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung",
-  description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und optionaler Analytics.`,
+  description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und Website-Analytics.`,
   alternates: {
     canonical: "/privacy",
   },
   openGraph: {
     title: `Datenschutzerklärung | ${PUBLIC_SITE_NAME}`,
-    description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und optionaler Analytics.`,
+    description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und Website-Analytics.`,
     url: "/privacy",
   },
 };
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       <main className="mx-auto min-h-screen max-w-3xl px-6 py-14">
       <h1 className="text-3xl font-semibold text-slate-900">Datenschutzerklärung</h1>
       <p className="mt-4 text-sm leading-6 text-slate-700">
-        Stand: 9. September 2026. Diese Datenschutzerklärung gilt für die öffentliche Website{" "}
+        Stand: 13. September 2026. Diese Datenschutzerklärung gilt für die öffentliche Website{" "}
         {PUBLIC_SITE_NAME} mit ihren Informationsseiten, Artikelseiten, dem Kontaktbereich und dem
         öffentlichen Quiz-Teaser.
       </p>
@@ -103,25 +103,24 @@ export default function PrivacyPage() {
 
         <article className="rounded-xl border border-white/70 bg-white/80 p-5">
           <h2 className="text-base font-semibold text-slate-900">
-            4. Cookies und einwilligungsbasierte Analytics
+            4. Cookies und Website-Analytics
           </h2>
           <p className="mt-3">
             Für den Quiz-Teaser wird ein technisch notwendiges Cookie gesetzt. Es dient dazu, die
             Funktion des Quiz-Teasers bereitzustellen und Missbrauch zu begrenzen.
           </p>
           <p className="mt-3">
-            Zusätzlich werden Nutzungsdaten für Website-Analytics nur dann verarbeitet, wenn du
-            zuvor ausdrücklich eingewilligt hast. Die Analytics dienen dazu, die Nutzung der
-            Website besser zu verstehen und das Angebot weiterzuentwickeln.
+            Website-Analytics startet standardmäßig beim Besuch der Website. Wir verwenden die
+            Daten, um Seitenaufrufe, Klicks und Quiz- sowie Anfrageergebnisse zu verstehen.
+            Du kannst die Erfassung jederzeit unter „Analytics-Einstellungen“ im Footer deaktivieren.
+            Eine bereits gespeicherte Ablehnung wird berücksichtigt.
           </p>
           <p className="mt-3">
             Rechtsgrundlage für das technisch notwendige Cookie ist Art. 6 Abs. 1 lit. f DSGVO
-            sowie, soweit anwendbar, § 25 Abs. 2 TDDDG. Rechtsgrundlage für die Analytics ist
-            deine Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO sowie, soweit anwendbar, § 25
-            Abs. 1 TDDDG.
+            sowie, soweit anwendbar, § 25 Abs. 2 TDDDG.
           </p>
           <p className="mt-3">
-            Wir erfassen nach deiner Zustimmung Seitenaufrufe, Seitenwechsel und Klicks auf
+            Wir erfassen bei aktiver Analytics Seitenaufrufe, Seitenwechsel und Klicks auf
             wichtige Links (etwa Telegram, Amazon und Downloads), sichtbare Angebote sowie Beginn und Ende einer Quizrunde. Dazu verwenden wir zufällige Browser-, Tab-Sitzungs- und
             Seitenaufruf-Kennungen, Zeitpunkte, bekannte Seitenpfade und die Reihenfolge der
             Ereignisse. Eine Sitzung gehört zu einem Tab; nach 30 Minuten ohne Aktivität beginnt
@@ -135,9 +134,9 @@ export default function PrivacyPage() {
             von Anfragen und werden nicht in den Analytics-Datensätzen gespeichert.
           </p>
           <p className="mt-3">
-            Die Verarbeitung erfolgt in unserer eigenen Infrastruktur. Vor der Zustimmung werden
-            keine Analytics-Kennungen angelegt und keine Ereignisse für eine spätere Übermittlung
-            gesammelt. Deine Entscheidung wird getrennt im Browser gespeichert. Blockiertes
+            Die Verarbeitung erfolgt in unserer eigenen Infrastruktur. Bei deaktivierter Analytics
+            werden keine Analytics-Kennungen angelegt und keine Ereignisse für eine spätere
+            Übermittlung gesammelt. Deine Einstellung wird getrennt im Browser gespeichert. Blockiertes
             Browserspeichern oder Verbindungsfehler können die Messung verhindern; die Website
             bleibt nutzbar. Die Statistik bildet nur tatsächlich übermittelte Beobachtungen ab.
           </p>
@@ -160,8 +159,8 @@ export default function PrivacyPage() {
               oder sonstige berechtigte Aufbewahrungspflicht eine längere Speicherung erfordert.
             </li>
             <li>
-              Server-, Proxy- und Sicherheitsprotokolle: 14 Tage; länger nur bei einem
-              Sicherheitsvorfall oder zur Missbrauchsaufklärung.
+              Betriebsprotokolle dienen dem Betrieb und der Fehleranalyse. Datenbank-Backups
+              werden 14 Tage aufbewahrt.
             </li>
           </ul>
         </article>
@@ -189,12 +188,12 @@ export default function PrivacyPage() {
             Verarbeitungen, die auf Art. 6 Abs. 1 lit. f DSGVO beruhen.
           </p>
           <p className="mt-3">
-            Eine erteilte Einwilligung für Analytics kannst du jederzeit mit Wirkung für die
+            Du kannst Website-Analytics jederzeit mit Wirkung für die
             Zukunft unter „Analytics-Einstellungen“ im Footer jeder öffentlichen Seite
-            widerrufen. Der Widerruf stoppt die weitere Erfassung in den geöffneten Tabs und
+            deaktivieren. Die Deaktivierung stoppt die weitere Erfassung in den geöffneten Tabs und
             entfernt die Analytics-Kennungen sowie noch wartende Ereignisse im Browser.
             Bereits übermittelte Daten werden dadurch nicht automatisch gelöscht; eine Löschung
-            kannst du über die oben genannte Kontaktadresse anfragen. Eine erneute Zustimmung
+            kannst du über die oben genannte Kontaktadresse anfragen. Eine erneute Aktivierung
             beginnt mit neuen Kennungen ohne Verknüpfung zur vorherigen Sitzung.
           </p>
         </article>

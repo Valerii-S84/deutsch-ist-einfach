@@ -13,15 +13,21 @@ let root: Root;
 let container: HTMLDivElement;
 const fetchSpy = vi.fn();
 const beacon = vi.fn((_url: string, _body: Blob) => true);
+let formBasis: unknown;
 function Probe() {
-  const { trackEvent } = usePublicAnalytics();
-  return <><button onClick={() => trackEvent("hero_cta_click", { cta: "telegram_bot", section: "hero", destination: "https://t.me/example?private=secret" })}>Telegram probe</button><AnalyticsSettingsButton /></>;
+  const { trackEvent, prepareFormSubmission } = usePublicAnalytics();
+  return <><button onClick={() => trackEvent("hero_cta_click", { cta: "telegram_bot", section: "hero", destination: "https://t.me/example?private=secret" })}>Telegram probe</button><button onClick={async () => { formBasis = (await prepareFormSubmission("student"))?.consent; }}>Form probe</button><AnalyticsSettingsButton /></>;
 }
 async function mount(mode: AnalyticsMode = "new") {
   await act(async () => { root.render(<StrictMode><AnalyticsProvider mode={mode}><Probe /></AnalyticsProvider></StrictMode>); });
 }
 async function click(text: string) {
-  const button = [...container.querySelectorAll("button")].find(node => node.textContent === text);
+  let button = [...container.querySelectorAll("button")].find(node => node.textContent === text);
+  if (!button && ["Analytics erlauben", "Analytics ablehnen", "Einwilligung widerrufen"].includes(text)) {
+    const settings = [...container.querySelectorAll("button")].find(node => node.textContent === "Analytics-Einstellungen");
+    if (settings) await act(async () => settings.click());
+    button = [...container.querySelectorAll("button")].find(node => node.textContent === text);
+  }
   expect(button, text).toBeDefined();
   await act(async () => button!.click());
 }
@@ -40,16 +46,24 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
-describe("consent-gated browser analytics", () => {
-  it("collects no IDs or queued actions before grant, then sends only the current view and a new click", async () => {
-    await mount(); await click("Telegram probe");
-    await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
-    expect(localStorage.getItem(VISITOR_KEY)).toBeNull(); expect(sessionStorage.getItem(SESSION_KEY)).toBeNull(); expect(fetchSpy).not.toHaveBeenCalled();
-    await click("Analytics erlauben"); await click("Telegram probe");
+describe("automatic analytics with persistent opt-out", () => {
+  it("starts automatically without a consent prompt and sends a page view and new click", async () => {
+    await mount();
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    await click("Telegram probe");
     expect(events().map(event => event.event_name)).toEqual(["session_start", "page_view", "element_click"]);
     expect(new Set(events().map(event => event.session_id)).size).toBe(1);
     expect(JSON.stringify(events())).not.toMatch(/private|secret|https:|page_title/);
     expect(fetchSpy.mock.calls.every(([url]) => url === "/api/public/analytics/events")).toBe(true);
+    expect(localStorage.getItem(WEBSITE_CONSENT_STORAGE_KEY)).toBeNull();
+  });
+  it("preserves an existing refusal without creating an identity or sending events", async () => {
+    localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, "denied");
+    await mount(); await click("Telegram probe");
+    await act(async () => { await vi.advanceTimersByTimeAsync(20000); });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(localStorage.getItem(VISITOR_KEY)).toBeNull();
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
   it("deny and revoke stop collection, delete IDs and discard unsent events; regrant is a new visitor", async () => {
     await mount(); await click("Analytics ablehnen"); await click("Telegram probe");
@@ -110,4 +124,11 @@ describe("consent-gated browser analytics", () => {
     await click("Analytics-Einstellungen"); await click("Analytics erlauben");
     expect(localStorage.getItem(PUBLIC_VISITOR_ID_STORAGE_KEY)).not.toBe(first);
   });
+});
+
+it("marks automatic form tracking without inventing granted consent", async () => {
+  formBasis = undefined;
+  await mount(); await click("Form probe");
+  expect(formBasis).toBe("automatic");
+  expect(localStorage.getItem(WEBSITE_CONSENT_STORAGE_KEY)).toBeNull();
 });

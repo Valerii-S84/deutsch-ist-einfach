@@ -55,7 +55,7 @@ export async function readSession(sql: AnalyticsDatabase, sessionId: string) {
   const id = analyticsId.parse(sessionId);
   const [result] = await sql`
     WITH bounds AS (SELECT statement_timestamp() AS generated_at), session_events AS (
-      SELECT * FROM analytics_events WHERE product_id = ${ANALYTICS_PRODUCT} AND session_id = ${id}::uuid
+      SELECT * FROM analytics_report_events WHERE product_id = ${ANALYTICS_PRODUCT} AND session_id = ${id}::uuid
     ), ${sessionSummaries(sql)}, browser_order AS (
       SELECT event_id, metadata->>'submission_attempt_id' AS attempt_id, sequence,
         max(occurred_at) OVER (ORDER BY sequence, occurred_at, event_id) AS sort_at
@@ -72,7 +72,7 @@ export async function readSession(sql: AnalyticsDatabase, sessionId: string) {
     )
     SELECT b.generated_at,
       (SELECT max(received_at) FROM session_events) AS last_received_at,
-      (SELECT min(occurred_at) FROM analytics_events WHERE product_id = ${ANALYTICS_PRODUCT}) AS history_available_from,
+      (SELECT min(occurred_at) FROM analytics_report_events WHERE product_id = ${ANALYTICS_PRODUCT}) AS history_available_from,
       (SELECT to_json(s) FROM with_outcome s) AS summary,
       COALESCE((SELECT json_agg(to_jsonb(e) - 'sort_at' - 'sort_sequence'
         ORDER BY sort_at, sort_sequence NULLS LAST, event_id) FROM ordered_events e), '[]'::json) AS events
@@ -106,7 +106,7 @@ export async function readOverview(sql: AnalyticsDatabase, days: AnalyticsReport
           - (${days}::int - 1) * interval '1 day') AT TIME ZONE 'UTC' AS period_start
     ), events AS (
       SELECT e.*
-      FROM analytics_events e, bounds b
+      FROM analytics_report_events e, bounds b
       WHERE e.product_id = ${ANALYTICS_PRODUCT}
         AND e.occurred_at >= b.period_start
         AND e.occurred_at < b.generated_at
@@ -143,8 +143,8 @@ export async function readOverview(sql: AnalyticsDatabase, days: AnalyticsReport
       LIMIT 20
     )
     SELECT b.generated_at, b.period_start,
-      (SELECT max(e.received_at) FROM analytics_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS last_received_at,
-      (SELECT min(e.occurred_at) FROM analytics_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS history_available_from,
+      (SELECT max(e.received_at) FROM analytics_report_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS last_received_at,
+      (SELECT min(e.occurred_at) FROM analytics_report_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS history_available_from,
       json_build_object(
         'visitors', (SELECT count(DISTINCT e.visitor_id)::int FROM events e),
         'sessions', (SELECT count(DISTINCT e.session_id)::int FROM events e),
@@ -195,7 +195,7 @@ export async function readSessions(sql: AnalyticsDatabase, options: SessionRepor
           - (${days}::int - 1) * interval '1 day') AT TIME ZONE 'UTC' AS period_start
     ), candidate_sessions AS (
       SELECT DISTINCT e.session_id
-      FROM analytics_events e, bounds b
+      FROM analytics_report_events e, bounds b
       WHERE e.product_id = ${ANALYTICS_PRODUCT}
         AND e.occurred_at >= b.period_start
         AND e.occurred_at < b.generated_at
@@ -204,7 +204,7 @@ export async function readSessions(sql: AnalyticsDatabase, options: SessionRepor
         AND (${selectionPredicate(sql, options.selection)})
     ), paged_sessions AS (
       SELECT e.session_id, min(e.occurred_at) AS started_at
-      FROM analytics_events e
+      FROM analytics_report_events e
       JOIN candidate_sessions c ON c.session_id = e.session_id
       WHERE e.product_id = ${ANALYTICS_PRODUCT}
       GROUP BY e.session_id
@@ -212,14 +212,14 @@ export async function readSessions(sql: AnalyticsDatabase, options: SessionRepor
       LIMIT 50 OFFSET ${offset}
     ), session_events AS (
       SELECT e.*
-      FROM analytics_events e
+      FROM analytics_report_events e
       JOIN paged_sessions c ON c.session_id = e.session_id
       WHERE e.product_id = ${ANALYTICS_PRODUCT}
     ), ${sessionSummaries(sql)}
 
     SELECT b.generated_at, b.period_start,
-      (SELECT max(e.received_at) FROM analytics_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS last_received_at,
-      (SELECT min(e.occurred_at) FROM analytics_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS history_available_from,
+      (SELECT max(e.received_at) FROM analytics_report_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS last_received_at,
+      (SELECT min(e.occurred_at) FROM analytics_report_events e WHERE e.product_id = ${ANALYTICS_PRODUCT}) AS history_available_from,
       (SELECT count(*)::int FROM candidate_sessions) AS total,
       COALESCE((SELECT json_agg(w ORDER BY w.started_at DESC, w.session_id DESC)
         FROM with_outcome w), '[]'::json) AS items
