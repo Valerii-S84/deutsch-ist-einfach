@@ -20,7 +20,7 @@ describe("normalizeOverviewData", () => {
     );
     expect(model.funnelSection.items[0]).toMatchObject({
       step: "Start",
-      step_label: "Neue Nutzer",
+      step_label: "Нові користувачі",
       ratio_to_previous: null,
     });
     expect(model.userLanguageSection).toMatchObject({
@@ -29,12 +29,12 @@ describe("normalizeOverviewData", () => {
       items: [
         {
           key: "de",
-          label: "Deutsch",
+          label: "Німецька",
           users: 2,
         },
         {
           key: "en",
-          label: "Englisch",
+          label: "Англійська",
           users: 1,
         },
       ],
@@ -85,12 +85,12 @@ describe("normalizeOverviewData", () => {
     expect(model.userLanguageSection.items).toMatchObject([
       {
         key: "de",
-        label: "Deutsch",
+        label: "Німецька",
         users: 2,
       },
       {
         key: "unknown",
-        label: "Unbekannt",
+        label: "Невідомо",
         users: 1,
       },
       {

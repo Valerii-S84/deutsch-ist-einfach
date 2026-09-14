@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { proxyQuizArena } from "@/lib/server/quiz-arena-proxy";
 import { createRequestRateLimiter } from "@/lib/server/request-rate-limit";
 
 import {
@@ -66,8 +67,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "INVALID_CREDENTIALS" }, { status: 401, headers: RESPONSE_HEADERS });
     }
 
-    const response = NextResponse.json({ ok: true }, { headers: RESPONSE_HEADERS });
+    // The owner uses the same existing credentials for both products. Open the
+    // independently verified backend session during this login; never store the password.
+    // A bot outage must not prevent access to the site's own administration.
+    let quizResponse: NextResponse | undefined;
+    let requiresQuiz2FA = false;
+    if (process.env.QUIZ_ARENA_ADMIN_URL?.trim()) {
+      const quizHeaders = new Headers(request.headers);
+      quizHeaders.set("cookie", `${SITE_ADMIN_SESSION_COOKIE}=${token}`);
+      quizHeaders.delete("content-length");
+      quizResponse = await proxyQuizArena(new NextRequest(new URL("/api/admin/quiz-arena/auth/login", request.url), {
+        method: "POST", headers: quizHeaders,
+        body: JSON.stringify({ email: body.email, password: body.password }),
+      }), "auth/login");
+      if (quizResponse.ok) {
+        const quizResult: unknown = await quizResponse.json();
+        requiresQuiz2FA = Boolean(quizResult && typeof quizResult === "object" && "requires_2fa" in quizResult && quizResult.requires_2fa === true);
+      }
+    }
+    const response = NextResponse.json({ ok: true, ...(requiresQuiz2FA ? { requires_quiz_2fa: true } : {}) }, { headers: RESPONSE_HEADERS });
     response.cookies.set(SITE_ADMIN_SESSION_COOKIE, token, siteAdminCookieOptions());
+    for (const cookie of quizResponse?.cookies.getAll() ?? []) response.cookies.set(cookie);
     return response;
   } catch {
     return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400, headers: RESPONSE_HEADERS });

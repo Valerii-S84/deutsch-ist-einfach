@@ -9,8 +9,8 @@ import { api, classifyApiError } from "@/lib/quiz-arena-api";
 import { apiRoutes } from "@/lib/quiz-arena-routes";
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email("Введіть коректну електронну адресу."),
+  password: z.string().min(6, "Пароль має містити щонайменше 6 символів."),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
       } else if (errorCode === "NETWORK_ERROR") {
         setErrorMessage("Мережеві проблеми. Перевірте з'єднання.");
       } else {
-        setErrorMessage("Не вдалося увійти. Перевір email/password.");
+        setErrorMessage("Не вдалося увійти. Перевірте електронну адресу та пароль.");
       }
       setRequires2FA(false);
     } finally {
@@ -82,6 +82,10 @@ export default function AdminLoginPage() {
   }
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("step") === "2fa") setRequires2FA(true);
+  }, []);
+
+  useEffect(() => {
     if (errorMessage) {
       errorRef.current?.focus();
     }
@@ -103,7 +107,7 @@ export default function AdminLoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
       <div className="surface rounded-2xl p-6">
-        <h1 className="text-3xl">Quiz Arena Bot Login</h1>
+        <h1 className="text-3xl">Вхід у Quiz Arena Bot</h1>
         {!requires2FA ? (
           <form
             className="mt-5 space-y-4"
@@ -113,13 +117,13 @@ export default function AdminLoginPage() {
           >
             <div>
               <label htmlFor="admin-email" className="mb-1 block text-sm font-medium text-white">
-                Email
+                Електронна адреса
               </label>
               <input
                 id="admin-email"
                 type="email"
                 className="w-full rounded-xl border border-ember/20 bg-white px-3 py-2"
-                placeholder="Email"
+                placeholder="Електронна адреса"
                 aria-invalid={form.formState.errors.email ? "true" : "false"}
                 aria-describedby={form.formState.errors.email ? "admin-email-error" : undefined}
                 {...form.register("email")}
@@ -136,13 +140,13 @@ export default function AdminLoginPage() {
                 htmlFor="admin-password"
                 className="mb-1 block text-sm font-medium text-white"
               >
-                Password
+                Пароль
               </label>
               <input
                 id="admin-password"
                 type="password"
                 className="w-full rounded-xl border border-ember/20 bg-white px-3 py-2"
-                placeholder="Password"
+                placeholder="Пароль"
                 aria-invalid={form.formState.errors.password ? "true" : "false"}
                 aria-describedby={form.formState.errors.password ? "admin-password-error" : undefined}
                 {...form.register("password")}
@@ -159,7 +163,7 @@ export default function AdminLoginPage() {
               className="w-full rounded-xl bg-ember px-3 py-2 text-sand disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isSubmitting || form.formState.isSubmitting}
             >
-              {isSubmitting || form.formState.isSubmitting ? "Signin..." : "Sign In"}
+              {isSubmitting || form.formState.isSubmitting ? "Вхід…" : "Увійти"}
             </button>
           </form>
         ) : (
@@ -169,21 +173,21 @@ export default function AdminLoginPage() {
                 htmlFor="admin-2fa-code"
                 className="mb-1 block text-sm font-medium text-white"
               >
-                2FA Code
+                Код двофакторної автентифікації
               </label>
               <input
                 id="admin-2fa-code"
                 value={totpCode}
                 onChange={(event) => setTotpCode(event.target.value)}
                 className="w-full rounded-xl border border-ember/20 bg-white px-3 py-2"
-                placeholder="2FA Code"
+                placeholder="Код підтвердження"
               />
             </div>
             <button
               className="w-full rounded-xl bg-coral px-3 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
               disabled={is2FALoading}
             >
-              {is2FALoading ? "Verifying..." : "Verify 2FA"}
+              {is2FALoading ? "Перевірка…" : "Підтвердити вхід"}
             </button>
           </form>
         )}

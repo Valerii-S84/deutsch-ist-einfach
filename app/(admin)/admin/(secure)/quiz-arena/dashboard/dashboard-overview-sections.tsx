@@ -27,20 +27,20 @@ function DashboardKpiSection({ model }: DashboardOverviewSectionsProps) {
             <article key={card.key} className="surface rounded-xl p-4">
               <p className="text-xs uppercase tracking-wide text-ember/60">{card.label}</p>
               <p className="mt-2 text-2xl font-semibold">
-                {metric ? formatValue(metric.current, card.unit) : "Keine Daten"}
+                {metric ? formatValue(metric.current, card.unit) : "Немає даних"}
               </p>
               {metric ? (
                 <>
                   <p className={`mt-1 text-xs ${deltaClassName(metric.delta_pct)}`}>
-                    Veränderung: {formatDelta(metric.delta_pct)}
+                    Зміна: {formatDelta(metric.delta_pct)}
                   </p>
                   <p className="mt-1 text-xs text-ember/60">
-                    Vorher: {formatValue(metric.previous, card.unit)}
+                    Попередній період: {formatValue(metric.previous, card.unit)}
                   </p>
                 </>
               ) : (
                 <p className="mt-1 text-xs text-red-700">
-                  Diese KPI fehlt im Payload oder hat einen ungültigen Typ.
+                  Джерело не надало коректного значення цього показника.
                 </p>
               )}
               <p className="mt-2 text-xs text-ember/70">{card.hint}</p>
@@ -55,9 +55,9 @@ function DashboardKpiSection({ model }: DashboardOverviewSectionsProps) {
 function DashboardFeatureUsageSection({ model }: DashboardOverviewSectionsProps) {
   return (
     <section className="surface rounded-2xl p-4">
-      <h2 className="text-xl">Nutzung wichtiger Funktionen</h2>
+      <h2 className="text-xl">Використання функцій бота</h2>
       <p className="mt-1 text-sm text-ember/70">
-        Diese Werte zeigen direkt, ob zentrale Features wirklich genutzt werden.
+        Скільки користувачів скористалися кожною функцією бота.
       </p>
       <div className="mt-3">
         <SectionStateNotice
@@ -76,15 +76,15 @@ function DashboardFeatureUsageSection({ model }: DashboardOverviewSectionsProps)
             >
               <p className="text-xs uppercase tracking-wide text-ember/60">{card.label}</p>
               <p className="mt-1 text-xl font-semibold">
-                {metric ? formatValue(metric.current, card.unit) : "Keine Daten"}
+                {metric ? formatValue(metric.current, card.unit) : "Немає даних"}
               </p>
               {metric ? (
                 <p className={`mt-1 text-xs ${deltaClassName(metric.delta_pct)}`}>
-                  Veränderung: {formatDelta(metric.delta_pct)}
+                  Зміна: {formatDelta(metric.delta_pct)}
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-red-700">
-                  Diese Feature-Metrik fehlt im Payload oder ist ungültig.
+                  Джерело не надало коректної статистики цієї функції.
                 </p>
               )}
               <p className="mt-2 text-xs text-ember/70">{card.hint}</p>

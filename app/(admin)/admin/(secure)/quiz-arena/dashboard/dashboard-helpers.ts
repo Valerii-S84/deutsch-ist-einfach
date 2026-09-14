@@ -11,10 +11,10 @@ import type {
 
 export function formatValue(value: number, unit: MetricUnit): string {
   if (unit === "percent") {
-    return `${value.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
+    return `${value.toLocaleString("uk-UA", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
   }
   if (unit === "eur") {
-    return value.toLocaleString("de-DE", {
+    return value.toLocaleString("uk-UA", {
       style: "currency",
       currency: "EUR",
       minimumFractionDigits: 0,
@@ -22,14 +22,14 @@ export function formatValue(value: number, unit: MetricUnit): string {
     });
   }
   if (unit === "stars") {
-    return `${value.toLocaleString("de-DE")} ⭐`;
+    return `${value.toLocaleString("uk-UA")} ⭐`;
   }
-  return value.toLocaleString("de-DE");
+  return value.toLocaleString("uk-UA");
 }
 
 export function formatDelta(value: number): string {
   const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toLocaleString("de-DE", { maximumFractionDigits: 1 })} %`;
+  return `${sign}${value.toLocaleString("uk-UA", { maximumFractionDigits: 1 })} %`;
 }
 
 export function deltaClassName(value: number): string {
@@ -48,21 +48,21 @@ export function mapAlert(
   if (alert.type === "webhook_errors") {
     return {
       title: "Telegram/Webhook-Fehler",
-      details: `${alert.count ?? "Keine Daten"} Fehler in den letzten 24 Stunden erkannt.`,
+      details: `${alert.count ?? "Немає даних"} Fehler in den letzten 24 Stunden erkannt.`,
       action: "Empfehlung: Worker-Logs prüfen und Telegram-Webhook-Status kontrollieren.",
     };
   }
   if (alert.type === "conversion_drop") {
     return {
       title: "Kauf-Konversion gesunken",
-      details: `Von ${alert.from ?? "Keine Daten"}% auf ${alert.to ?? "Keine Daten"}% gefallen.`,
+      details: `Von ${alert.from ?? "Немає даних"}% auf ${alert.to ?? "Немає даних"}% gefallen.`,
       action: "Empfehlung: Angebote, Checkout und letzte Produkt-Änderungen prüfen.",
     };
   }
   if (alert.type === "suspicious_activity") {
     return {
       title: "Auffällige Promo-Aktivität",
-      details: `${alert.invalid_promo_attempts_1h ?? "Keine Daten"} ungültige Promo-Versuche in 1 Stunde.`,
+      details: `${alert.invalid_promo_attempts_1h ?? "Немає даних"} ungültige Promo-Versuche in 1 Stunde.`,
       action: "Empfehlung: Promo-Kampagnen und Missbrauchs-Filter prüfen.",
     };
   }
@@ -87,7 +87,7 @@ export function formatHourRangeLabel(hour: number): string {
 }
 
 export function formatShortDateLabel(value: string): string {
-  return new Date(value).toLocaleDateString("de-DE", {
+  return new Date(value).toLocaleDateString("uk-UA", {
     day: "2-digit",
     month: "2-digit",
     timeZone: "Europe/Berlin",

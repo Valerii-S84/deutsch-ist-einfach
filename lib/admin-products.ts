@@ -7,7 +7,7 @@ export const adminProducts = [
 ] as const;
 
 export function adminProductDescription(id: string): string {
-  if (id === "quiz-arena") return "Статистика, користувачі, контент, економіка, промокоди й система. Окремий вхід та чинна 2FA бота.";
-  if (id === "deutschmit") return "Website Analytics v2: Overview, Sessions, Pages, Clicks/Events, Traffic, Conversions. Стара статистика сайту, заявки та архів доступні окремо.";
+  if (id === "quiz-arena") return "Активність бота, користувачі, вікторини, покупки та підписки. Сесія бота відкривається під час входу власника; другий фактор перевіряється, якщо його вимагає бот.";
+  if (id === "deutschmit") return "Відвідувачі, відвідування, переглянуті сторінки, натискання, джерела переходів і результати дій. Заявки та попередні дані також доступні.";
   return "Джерело не підключено. Відсутність даних не означає нульову активність.";
 }

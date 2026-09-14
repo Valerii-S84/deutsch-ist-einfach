@@ -7,9 +7,9 @@ import { formatDuration, ReportState, SnapshotNotice } from "./analytics-ui";
 afterEach(() => vi.useRealTimers());
 
 it("keeps an absent active-time observation separate from measured zero", () => {
-  expect(formatDuration(null)).toBe("Keine Daten");
-  expect(formatDuration(0)).toBe("0 ms");
-  expect(formatDuration(60_000)).toBe("1 min 0 s");
+  expect(formatDuration(null)).toBe("Немає даних");
+  expect(formatDuration(0)).toBe("0 мс");
+  expect(formatDuration(60_000)).toBe("1 хв 0 с");
 });
 
 it("hides cached counters on an error and distinguishes loading", () => {
@@ -17,7 +17,7 @@ it("hides cached counters on an error and distinguishes loading", () => {
   expect(error).toContain('role="alert"');
   expect(error).not.toContain("private failure");
   expect(error).not.toContain("42");
-  expect(renderToStaticMarkup(<ReportState loading error={null}>42</ReportState>)).toContain("Wird geladen");
+  expect(renderToStaticMarkup(<ReportState loading error={null}>42</ReportState>)).toContain("Завантаження");
 });
 
 it("marks a mounted snapshot stale after five minutes without a new response", () => {
@@ -30,7 +30,7 @@ it("marks a mounted snapshot stale after five minutes without a new response", (
     act(() => vi.advanceTimersByTime(300_000));
     expect(container.textContent).toBe("");
     act(() => vi.advanceTimersByTime(15_000));
-    expect(container.textContent).toContain("älter als 5 Minuten");
+    expect(container.textContent).toContain("старші за 5 хвилин");
     act(() => root.render(<SnapshotNotice generatedAt="2026-09-13T10:05:15Z" />));
     expect(container.textContent).toBe("");
   } finally { act(() => root.unmount()); }

@@ -49,14 +49,14 @@ describe("DashboardOverviewSections", () => {
       React.createElement(DashboardOverviewSections, { model }),
     );
 
-    expect(markup).toContain("Keine Daten");
-    expect(markup).toContain("1 kpi-karten fehlen oder sind ungültig.");
-    expect(markup).toContain("Berlin-Zeit · 3 von 24 Stundenfenstern");
+    expect(markup).toContain("Немає даних");
+    expect(markup).toContain("1 показники відсутні або некоректні.");
+    expect(markup).toContain("Час Берліна · 3 із 24 годин");
     expect(markup).toContain(
-      "3 von 24 Berliner Stundenfenstern sind vorhanden. Fehlende Buckets wurden nicht als 0 ergänzt.",
+      "3 із 24 годин за часом Берліна мають дані. Пропущені години не доповнюються нулями.",
     );
     expect(markup).toContain(
-      "Durchschnitt über die vorhandenen Berliner Stundenfenster. Fehlende Buckets wurden nicht als 0 ergänzt.",
+      "Середнє за наявними годинами за часом Берліна. Пропущені години не доповнюються нулями.",
     );
   });
 
@@ -67,10 +67,10 @@ describe("DashboardOverviewSections", () => {
     );
 
     expect(markup).toContain(
-      'Aktive Nutzer (24h)</p><p class="mt-2 text-2xl font-semibold">0</p>',
+      'Активні за 24 години</p><p class="mt-2 text-2xl font-semibold">0</p>',
     );
-    expect(markup).toContain("Aktuell keine kritischen Warnungen.");
-    expect(markup).toContain("Im gewählten Zeitraum wurden keine aktiven Nutzer erfasst.");
+    expect(markup).toContain("Критичних попереджень немає.");
+    expect(markup).toContain("За вибраний період активних користувачів не зафіксовано.");
   });
 
   it("renders user language distribution and unavailable demographic sources", () => {
@@ -79,14 +79,14 @@ describe("DashboardOverviewSections", () => {
       React.createElement(DashboardOverviewSections, { model }),
     );
 
-    expect(markup).toContain("Nutzer nach Sprache");
-    expect(markup).toContain("Deutsch");
+    expect(markup).toContain("Мови користувачів");
+    expect(markup).toContain("Німецька");
     expect(markup).toContain("66,7%");
     expect(markup).toContain(
-      "Alter kann aktuell nicht ausgewertet werden, weil das Backend kein Alter am Nutzer speichert.",
+      "Вік користувачів не зберігається, тому вікова статистика недоступна.",
     );
     expect(markup).toContain(
-      "Geschlecht kann aktuell nicht ausgewertet werden, weil das Backend kein Geschlecht am Nutzer speichert.",
+      "Стать користувачів не зберігається, тому відповідна статистика недоступна.",
     );
   });
 
@@ -106,9 +106,9 @@ describe("DashboardOverviewSections", () => {
       React.createElement(DashboardOverviewSections, { model }),
     );
 
-    expect(markup.indexOf("Neue Nutzer: 2 Nutzer")).toBeLessThan(
-      markup.indexOf("Erstes Quiz: 1 Nutzer"),
+    expect(markup.indexOf("Нові користувачі: 2 Користувачі")).toBeLessThan(
+      markup.indexOf("Перша вікторина: 1 Користувачі"),
     );
-    expect(markup).toContain("50% relativ zur vorherigen Stufe im selben Zeitraum");
+    expect(markup).toContain("50% від попереднього кроку за той самий період");
   });
 });
