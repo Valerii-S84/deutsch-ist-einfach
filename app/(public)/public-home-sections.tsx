@@ -4,6 +4,7 @@ import { trackAttributes } from "@/lib/umami";
 
 import {
   PUBLIC_SITE_NAME,
+  PUBLIC_YOUTUBE_CHANNEL_URL,
   QUIZ_PRODUCT_NAME,
   TELEGRAM_BOT_START_PAYLOAD,
   getDeutschTrainerBotUrl,
@@ -363,15 +364,27 @@ export function PublicHomeChannelSection() {
             </p>
           </div>
         </div>
-        <a
-          href={telegramChannelUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
-          {...trackAttributes("telegram-click", { cta: "telegram_channel", placement: "channel" })}
-        >
-          Kanal öffnen
-        </a>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <a
+            href={telegramChannelUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
+            {...trackAttributes("telegram-click", { cta: "telegram_channel", placement: "channel" })}
+          >
+            Kanal öffnen
+          </a>
+          <a
+            href={PUBLIC_YOUTUBE_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)"
+            {...trackAttributes("youtube-click", { placement: "channel" })}
+            className={`w-full sm:w-auto ${SECONDARY_BUTTON_CLASS}`}
+          >
+            YouTube-Kanal
+          </a>
+        </div>
       </div>
     </section>
   );
@@ -408,7 +421,6 @@ export function PublicHomeFurtherProjectsSection() {
   const furtherProjects = [
     {
       title: "Bücher",
-      analyticsId: "books",
       category: "Lesen & Lernen",
       description:
         "Deutsch für Elektriker als Printausgabe und Kindle-eBook – weitere Titel folgen.",
@@ -416,21 +428,6 @@ export function PublicHomeFurtherProjectsSection() {
       actionLabel: "Bücher entdecken",
       imageSrc: undefined,
       badge: "Bü",
-      download: undefined,
-      external: false,
-    },
-    {
-      title: "Shorts Blocker Kids",
-      analyticsId: "shorts_blocker",
-      category: "Digitales Wohlbefinden",
-      description:
-        "Ein eigenständiges Projekt für einen bewussteren Umgang mit Kurzvideo-Feeds auf Kindergeräten.",
-      href: "https://www.shortsblockerkids.de/",
-      actionLabel: "Projekt ansehen",
-      imageSrc: undefined,
-      badge: "SB",
-      download: undefined,
-      external: true,
     },
   ] as const;
 
@@ -440,7 +437,7 @@ export function PublicHomeFurtherProjectsSection() {
         <p className="text-sm font-semibold text-slate-400">Außerdem von uns</p>
         <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Weitere Projekte</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-          Bücher und eigenständige Projekte neben unseren digitalen Lernformaten.
+          Bücher als Ergänzung zu unseren digitalen Lernformaten.
         </p>
       </div>
       <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -480,30 +477,7 @@ export function PublicHomeFurtherProjectsSection() {
 
           const className = `flex min-w-0 items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:border-[#4DE2C6]/30 hover:bg-white/[0.07] sm:p-5 ${LINK_FOCUS_CLASS}`;
 
-          return project.download ? (
-            <a
-              key={project.title}
-              href={project.href}
-              {...(project.analyticsId === "shorts_blocker" ? trackAttributes("shorts-blocker-click") : {})}
-              download={project.download}
-              aria-label={`${project.title}: ${project.actionLabel}`}
-              className={className}
-            >
-              {content}
-            </a>
-          ) : project.external ? (
-            <a
-              key={project.title}
-              href={project.href}
-              {...(project.analyticsId === "shorts_blocker" ? trackAttributes("shorts-blocker-click") : {})}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`${project.title}: ${project.actionLabel} (öffnet in einem neuen Tab)`}
-              className={className}
-            >
-              {content}
-            </a>
-          ) : (
+          return (
             <Link
               key={project.title}
               href={project.href}
@@ -675,6 +649,16 @@ export function PublicHomeFooter({ trackedTelegramBotUrl }: PublicHomeFooterProp
             className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}
           >
             Telegram
+          </a>
+          <a
+            href={PUBLIC_YOUTUBE_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)"
+            {...trackAttributes("youtube-click", { placement: "footer" })}
+            className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}
+          >
+            YouTube
           </a>
         </nav>
       </div>

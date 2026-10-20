@@ -3,7 +3,7 @@ export const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ?? "";
 export type UmamiEvent =
   | "telegram-click"
   | "amazon-click"
-  | "shorts-blocker-click"
+  | "youtube-click"
   | "hero-cta"
   | "quiz-start"
   | "quiz-complete"

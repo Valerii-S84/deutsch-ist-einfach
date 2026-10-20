@@ -3,7 +3,7 @@
 import { track, trackAttributes } from "@/lib/umami";
 import { useEffect, useRef, useState } from "react";
 
-import { getTelegramChannelUrl } from "@/lib/public-site-config";
+import { getTelegramChannelUrl, PUBLIC_YOUTUBE_CHANNEL_URL } from "@/lib/public-site-config";
 import { ORANGE_BUTTON_CLASS, SECONDARY_BUTTON_CLASS } from "../public-home-content";
 import {
   fetchQuizTeaserQuestion,
@@ -458,6 +458,7 @@ export function PublicHomeQuizTeaserDailyWidget({ trackedTelegramBotUrl }: Props
           <div className="mt-5 grid gap-3">
             <a {...trackAttributes("telegram-click", { cta: "telegram_bot", placement: "quiz_teaser" })} href={trackedTelegramBotUrl} target="_blank" rel="noreferrer" className={`w-full ${ORANGE_BUTTON_CLASS}`}>Im Telegram-Bot weiterüben</a>
             <a {...trackAttributes("telegram-click", { cta: "telegram_channel", placement: "quiz_teaser" })} href={getTelegramChannelUrl()} target="_blank" rel="noreferrer" className={`w-full ${SECONDARY_BUTTON_CLASS}`}>Tägliche Lerntipps im Kanal</a>
+            <a {...trackAttributes("youtube-click", { placement: "quiz_teaser" })} href={PUBLIC_YOUTUBE_CHANNEL_URL} target="_blank" rel="noopener noreferrer" aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)" className={`w-full ${SECONDARY_BUTTON_CLASS}`}>Lernvideos auf YouTube</a>
           </div>
         </div>
       )}

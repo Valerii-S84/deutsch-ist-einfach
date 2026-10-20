@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
+  PublicHomeChannelSection,
   PublicHomeContactSection,
   PublicHomeFooter,
   PublicHomeFurtherProjectsSection,
@@ -90,6 +91,26 @@ describe("public home scenarios", () => {
 
     expect(html).toContain(`© 2026 ${PUBLIC_SITE_NAME}`);
     expect(html).not.toContain("© 2026 Deutsch Quiz Arena");
+    expect(html).toContain('href="https://www.youtube.com/@KommmitaufDeutsch"');
+    expect(html).toContain('data-track="youtube-click"');
+    expect(html).toContain('data-track-placement="footer"');
+    expect(html).toContain('rel="noopener noreferrer"');
+  });
+
+  it("links to the YouTube channel alongside the Telegram channel without embeds", () => {
+    const html = renderToStaticMarkup(<PublicHomeChannelSection />);
+
+    expect(html).toContain("Kanal öffnen");
+    expect(html).toContain("YouTube-Kanal");
+    expect(html).toContain('href="https://www.youtube.com/@KommmitaufDeutsch"');
+    expect(html).toContain('data-track="youtube-click"');
+    expect(html).toContain('data-track-placement="channel"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)"');
+    expect(html).not.toContain("<iframe");
+    expect(html).not.toContain("youtube-nocookie");
+    expect(html).not.toContain("ytimg");
   });
 
   it("renders the knowledge section links for all configured article slugs", () => {
@@ -152,10 +173,9 @@ describe("public home scenarios", () => {
     expect(html).toContain("Bücher");
     expect(html).toContain('href="/books"');
     expect(html).toContain("Deutsch für Elektriker als Printausgabe und Kindle-eBook");
-    expect(html).toContain("Shorts Blocker Kids");
-    expect(html).toContain('href="https://www.shortsblockerkids.de/"');
-    expect(html).toContain('target="_blank"');
-    expect(html).toContain('rel="noreferrer"');
+    expect(html).not.toContain("Shorts Blocker Kids");
+    expect(html).not.toContain("shortsblockerkids");
+    expect(html).not.toContain('target="_blank"');
   });
 
   it("labels fresh and unavailable statistics without inventing a timestamp", () => {

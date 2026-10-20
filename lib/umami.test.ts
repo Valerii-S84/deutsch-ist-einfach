@@ -54,7 +54,7 @@ describe("Umami", () => {
     expect(trackAttributes("telegram-click", { cta: "telegram_bot", placement: "header" })).toEqual({
       "data-track": "telegram-click", "data-track-cta": "telegram_bot", "data-track-placement": "header",
     });
-    expect(trackAttributes("shorts-blocker-click")).toEqual({ "data-track": "shorts-blocker-click" });
+    expect(trackAttributes("youtube-click", { placement: "footer" })).toEqual({ "data-track": "youtube-click", "data-track-placement": "footer" });
     expect(trackAttributes("quiz-start", { day: 2 })).toEqual({ "data-track": "quiz-start", "data-track-day": 2 });
   });
 

@@ -3,6 +3,7 @@ const DEFAULT_TELEGRAM_CHANNEL_URL = "https://t.me/doechkurse";
 const DEFAULT_DEUTSCH_TRAINER_BOT_URL = "https://t.me/Trainer1512_bot";
 const DEFAULT_SITE_URL = "https://deutschmit.de";
 export const PUBLIC_CONTACT_EMAIL = "svalerii535@gmail.com";
+export const PUBLIC_YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@KommmitaufDeutsch";
 
 export const PUBLIC_SITE_NAME = "Deutsch ist einfach!";
 export const PUBLIC_SITE_DESCRIPTION =
