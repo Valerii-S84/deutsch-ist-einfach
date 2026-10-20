@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { prepareArticleContentForNavigation } from "./article-content";
+import { extractArticleBodyAndStyles, prepareArticleContentForNavigation } from "./article-content";
 
 describe("prepareArticleContentForNavigation", () => {
   it("derives stable anchors and nested navigation labels from article headings", () => {
@@ -62,5 +62,42 @@ describe("prepareArticleContentForNavigation", () => {
     expect(prepared.content).not.toContain(
       '>B2 – Fließend und flexibel</h3>',
     );
+  });
+
+  it("decodes entities, preserves existing generated headings and creates unique fallback anchors", () => {
+    const prepared = prepareArticleContentForNavigation(`
+      <h2 data-article-toc-heading="true" id="kept">Kept &amp; ready</h2>
+      <h2>Äpfel &amp; Öl</h2>
+      <h2>Äpfel &amp; Öl</h2>
+      <h3><span>&#xDC;bung &#8211; &unknown;</span></h3>
+      <h2>!!!</h2>
+    `);
+
+    expect(prepared.tableOfContents).toEqual([
+      { id: "kept", label: "Kept & ready", level: 2 },
+      { id: "artikel-aepfel-und-oel", label: "Äpfel & Öl", level: 2 },
+      { id: "artikel-aepfel-und-oel-2", label: "Äpfel & Öl", level: 2 },
+      { id: "artikel-uebung-und-unknown", label: "Übung – &unknown;", level: 3 },
+      { id: "artikel-abschnitt", label: "!!!", level: 2 },
+    ]);
+    expect(prepared.content).not.toContain('id="artikel-aepfel-und-oel" id=');
+  });
+
+  it("extracts scoped styles from full documents and fragments", () => {
+    const full = extractArticleBodyAndStyles(`
+      <html><head><style>:root { color: red; }
+body, .card { margin: 0; }
+body.dark { color: black; }</style></head>
+      <body><main>Artikel</main></body></html>
+    `, "article-doc");
+
+    expect(full.content.trim()).toBe("<main>Artikel</main>");
+    expect(full.styles).toContain(".article-doc { color: red; }");
+    expect(full.styles).toContain(".article-doc, .card");
+    expect(full.styles).toContain(".article-doc.dark");
+
+    const fragment = extractArticleBodyAndStyles("<style>body>.card{display:block}</style><section>Text</section>", "article-doc");
+    expect(fragment.content).toContain("<section>Text</section>");
+    expect(fragment.styles).toContain(".article-doc>.card");
   });
 });

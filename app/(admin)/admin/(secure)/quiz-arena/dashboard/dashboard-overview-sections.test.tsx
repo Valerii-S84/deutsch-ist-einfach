@@ -111,4 +111,89 @@ describe("DashboardOverviewSections", () => {
     );
     expect(markup).toContain("50% від попереднього кроку за той самий період");
   });
+
+  it("renders invalid and empty chart fallbacks without inventing metrics", () => {
+    const model = normalizeOverviewData(parseOverviewPayloadSections(overviewFixture));
+    const fallbackModel = {
+      ...model,
+      hourlyActivity: {
+        ...model.hourlyActivity,
+        status: "invalid" as const,
+        message: "Погодинне джерело повернуло некоректні дані.",
+        series: [],
+        pointCount: 0,
+        missingHours: [],
+        peakWindow: null,
+        averageUsersPerHourBucket: null,
+        topWindows: [],
+      },
+      revenueSection: {
+        ...model.revenueSection,
+        status: "invalid" as const,
+        message: null,
+        series: [],
+        totalRevenueStars: null,
+      },
+      usersSection: {
+        ...model.usersSection,
+        status: "invalid" as const,
+        message: null,
+        series: [],
+        averageActiveUsersPerDay: null,
+      },
+      userLanguageSection: {
+        ...model.userLanguageSection,
+        status: "invalid" as const,
+        message: null,
+        totalUsers: 0,
+        items: [],
+      },
+      userAgeSection: {
+        ...model.userAgeSection,
+        status: "empty" as const,
+        message: "Віковий розподіл порожній.",
+        totalUsers: 0,
+        items: [],
+      },
+      userGenderSection: {
+        ...model.userGenderSection,
+        status: "partial" as const,
+        message: "Гендерний розподіл частковий.",
+        totalUsers: 0,
+        items: [],
+      },
+      funnelSection: {
+        status: "invalid" as const,
+        message: null,
+        items: [],
+      },
+      topProductsSection: {
+        status: "invalid" as const,
+        message: null,
+        items: [],
+      },
+      alertsSection: {
+        status: "partial" as const,
+        message: "Є попередження для перевірки.",
+        alerts: [{ type: "unexpected_metric_gap", severity: "warning" }],
+      },
+    };
+    const markup = renderToStaticMarkup(
+      React.createElement(DashboardOverviewSections, { model: fallbackModel }),
+    );
+
+    expect(markup).toContain("Час Берліна · некоректні дані");
+    expect(markup).toContain("Погодинне джерело повернуло некоректні дані.");
+    expect(markup).toContain("Погодинні дані для цього розділу недоступні.");
+    expect(markup).toContain("Для цього показника немає достовірних погодинних даних.");
+    expect(markup).toContain("Даних про активність ще немає.");
+    expect(markup).toContain("Даних про дохід немає.");
+    expect(markup).toContain("Даних про користувачів немає.");
+    expect(markup).toContain("Даних про розподіл немає.");
+    expect(markup).toContain("Віковий розподіл порожній.");
+    expect(markup).toContain("Гендерний розподіл частковий.");
+    expect(markup).toContain("Даних про кроки активності немає.");
+    expect(markup).toContain("Даних про дохід за продуктами немає.");
+    expect(markup).toContain("Є попередження для перевірки.");
+  });
 });

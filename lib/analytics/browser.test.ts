@@ -72,6 +72,31 @@ describe("page and session lifecycle", () => {
 });
 
 describe("important actions", () => {
+  it("keeps invalid quiz, form and public click inputs out of the event stream", async () => {
+    tracker.track("hero_cta_click", { cta: "unknown", section: "hero" });
+    tracker.track("wizard_open", { wizard_type: "teacher" } as never);
+    tracker.track("form_error", { form_id: "teacher", error_code: "network_error" } as never);
+    tracker.track("quiz_teaser_started", { quiz_source: "private", day_number: 1 } as never);
+    tracker.track("quiz_teaser_started", { quiz_source: "api", day_number: 0 });
+    tracker.track("quiz_teaser_completed", { quiz_source: "api", day_number: 1, question_index: 5, score: 3 });
+    tracker.track("quiz_teaser_started", { quiz_source: "api", day_number: 1 });
+    tracker.track("quiz_teaser_completed", { quiz_source: "api", day_number: 1, question_index: 4, score: 3 });
+    tracker.track("quiz_teaser_completed", { quiz_source: "api", day_number: 1, question_index: 5, score: 6 });
+    tracker.track("quiz_teaser_completed", { quiz_source: "api", day_number: 1, question_index: 5, score: 2.5 });
+    tracker.track("quiz_teaser_completed", { quiz_source: "api", day_number: 1, question_index: 5, score: 3 });
+    tracker.track("quiz_teaser_completed", { quiz_source: "api", day_number: 1, question_index: 5, score: 4 });
+    tracker.track("quiz_teaser_error", { error_code: 42 } as never);
+    await settle(); await click();
+
+    const events = captured();
+    expect(events.filter(event => event.event_name === "element_click")).toHaveLength(1);
+    expect(events.filter(event => event.event_name === "form_open")).toHaveLength(0);
+    expect(events.filter(event => event.event_name === "form_error")).toHaveLength(0);
+    expect(events.filter(event => event.event_name === "quiz_started")).toHaveLength(1);
+    expect(events.filter(event => event.event_name === "quiz_completed")).toHaveLength(1);
+    expect(events.find(event => event.event_name === "frontend_error")?.metadata).toMatchObject({ error_code: "unknown_error", component_id: "quiz" });
+  });
+
   it("maps internal/Telegram explicit actions and ignores answer/client-success payloads", async () => {
     tracker.track("hero_cta_click", { cta: "quiz_teaser_anchor", section: "hero", destination: "https://private.example/person" });
     tracker.track("quiz_teaser_question_answered", { selected_answer_id: "private answer" });
@@ -88,6 +113,22 @@ describe("important actions", () => {
     expect(new Set(captured().map(event => event.event_id)).size).toBe(captured().length);
     expect(JSON.stringify(captured())).not.toContain("Private text");
   });
+  it("ignores unsupported delegated clicks, auxclicks and no-op navigation guards", async () => {
+    document.body.innerHTML = '<button data-analytics-id="unknown" data-analytics-placement="hero"></button><button data-analytics-id="book_print" data-analytics-placement="bad"></button><button data-analytics-id="book_print" data-analytics-placement="books"></button>';
+    const [unknown, badPlacement, valid] = Array.from(document.querySelectorAll("button"));
+    unknown.click();
+    badPlacement.click();
+    valid.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 0 }));
+    valid.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 1 }));
+    tracker.navigate(window.location.pathname);
+    allowed = false;
+    tracker.navigate("/blocked");
+    allowed = true;
+    await settle(); await vi.advanceTimersByTimeAsync(0);
+
+    expect(captured().filter(event => event.event_name === "element_click")).toHaveLength(1);
+    expect(captured().filter(event => event.event_name === "page_leave")).toHaveLength(0);
+  });
   it.each(["student", "partner"] as const)("correlates %s open/submit/error and creates new IDs for retry/reopen", async form => {
     tracker.track("wizard_open", { wizard_type: form });
     const context = await tracker.prepareFormSubmission(form); await settle();
@@ -102,6 +143,32 @@ describe("important actions", () => {
     const events = captured();
     expect(events.filter(event => event.event_name === "form_error")[0].metadata.submission_attempt_id).toBe(context!.submission_attempt_id);
     expect(events.some(event => event.event_name === "form_success")).toBe(false);
+  });
+  it("keeps automatic form context and rejects stale submission errors", async () => {
+    tracker.stop();
+    tracker = new WebsiteAnalytics(() => allowed, () => "automatic");
+    tracker.start();
+    await settle();
+
+    const context = await tracker.prepareFormSubmission("student");
+    tracker.track("form_error", {
+      form_id: "student",
+      form_instance_id: context!.form_instance_id,
+      submission_attempt_id: crypto.randomUUID(),
+      error_code: "stale_attempt",
+    });
+    tracker.track("form_error", {
+      form_id: "student",
+      form_instance_id: context!.form_instance_id,
+      error_code: "network_error",
+    });
+    await settle(); await vi.advanceTimersByTimeAsync(0);
+
+    const errors = captured().filter(event => event.event_name === "form_error");
+    expect(context?.consent).toBe("automatic");
+    expect(errors).toHaveLength(1);
+    expect(errors[0].metadata).toMatchObject({ form_id: "student", error_code: "network_error" });
+    expect(errors[0].metadata).not.toHaveProperty("submission_attempt_id");
   });
   it("denial creates no form/run IDs or submission context and does not replay on grant", async () => {
     allowed = false;
@@ -132,5 +199,15 @@ describe("important actions", () => {
     tracker.navigate("/contact"); await settle();
     window.dispatchEvent(new Event("unhandledrejection")); await settle(); await click();
     expect(captured().filter(event => event.event_name === "frontend_error")).toHaveLength(6);
+  });
+  it("does not emit after the tracker has been stopped", async () => {
+    await click();
+    const beforeStop = captured().length;
+    tracker.stop();
+    tracker.track("channel_cta_click", { section: "channel" });
+    tracker.navigate("/after-stop");
+    await settle(); await vi.advanceTimersByTimeAsync(0);
+
+    expect(captured()).toHaveLength(beforeStop);
   });
 });
