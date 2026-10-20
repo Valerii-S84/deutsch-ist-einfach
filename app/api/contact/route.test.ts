@@ -5,7 +5,6 @@ import type { ContactRequest } from "@/lib/contact/contact-schema";
 import { handleContactSubmission } from "@/lib/server/contact-submission";
 
 import { POST } from "./route";
-import { syntheticContactContext } from "@/lib/analytics/fixtures.test-support";
 
 vi.mock("@/lib/server/contact-submission", () => ({
   handleContactSubmission: vi.fn(),
@@ -70,18 +69,22 @@ afterEach(() => {
 });
 
 describe("POST /api/contact", () => {
-  it.each(["student", "partner"] as const)("separates the %s analytics context from the validated contact", async form => {
+  it.each(["student", "partner"] as const)("discards cached %s analytics before processing the validated contact", async form => {
     const payload = form === "student" ? studentPayload : partnerPayload;
-    const analytics = syntheticContactContext(form);
+    const analytics = { form_id: form, visitor_id: "legacy-client" };
     await expectJson(await POST(contactRequest(JSON.stringify({ ...payload, analytics }))), 202, { ok: true });
-    expect(handleContactSubmissionMock).toHaveBeenCalledWith(payload, analytics);
+    expect(handleContactSubmissionMock).toHaveBeenCalledExactlyOnceWith(payload);
   });
-  it.each([null, "private text", { consent: "denied" }, { ...syntheticContactContext(), email: "private@example.test" }, { ...syntheticContactContext(), visitor_id: "invalid" }, syntheticContactContext("partner")])("ignores invalid analytics without rejecting a valid contact: %j", async analytics => {
+  it.each([null, "private text", 42, true, [], { consent: "denied" }, { email: "private@example.test" }, { form_id: "partner" }])("ignores arbitrary analytics without rejecting a valid contact: %j", async analytics => {
     await expectJson(await POST(contactRequest(JSON.stringify({ ...studentPayload, analytics }))), 202, { ok: true });
     expect(handleContactSubmissionMock).toHaveBeenCalledExactlyOnceWith(studentPayload);
   });
+  it("rejects other extra fields even when cached analytics is present", async () => {
+    await expectJson(await POST(contactRequest(JSON.stringify({ ...studentPayload, analytics: null, extra: true }))), 422, { error: "invalid_payload" });
+    expect(handleContactSubmissionMock).not.toHaveBeenCalled();
+  });
   it("honeypot bypasses persistence and success even with a valid context", async () => {
-    await expectJson(await POST(contactRequest(JSON.stringify({ ...studentPayload, company: "bot", analytics: syntheticContactContext() }))), 202, { ok: true });
+    await expectJson(await POST(contactRequest(JSON.stringify({ ...studentPayload, company: "bot", analytics: { form_id: "student" } }))), 202, { ok: true });
     expect(handleContactSubmissionMock).not.toHaveBeenCalled();
   });
   it("accepts a valid student request through the server boundary", async () => {

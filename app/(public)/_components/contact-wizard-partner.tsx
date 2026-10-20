@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import type { ContactAnalyticsContext } from "@/lib/analytics/contract";
 import { useContactAnalytics } from "./use-contact-analytics";
 import { submitContactRequest } from "@/lib/contact/contact-client";
 import {
@@ -186,7 +185,6 @@ export function PartnerWizard({ onClose }: WizardProps) {
     setErrorMessage(null);
     setErrorFieldId(null);
 
-    let context: ContactAnalyticsContext | undefined;
     try {
       const payload = partnerContactRequestSchema.parse({
         type: "partner",
@@ -201,12 +199,12 @@ export function PartnerWizard({ onClose }: WizardProps) {
         startTimeline: form.startTimeline,
         company: form.company,
       });
-      context = await analytics.submit();
-      await submitContactRequest(payload, context);
+      await submitContactRequest(payload);
+      analytics.success();
       setSubmitState("success");
 
     } catch (error) {
-      analytics.submissionError(error, context);
+      analytics.submissionError(error);
       setSubmitState("error");
       setErrorMessage("Etwas ist schiefgelaufen. Bitte versuche es erneut.");
       setErrorFieldId(PARTNER_ERROR_ID);

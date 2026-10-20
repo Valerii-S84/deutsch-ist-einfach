@@ -14,10 +14,11 @@ import {
   type QuizTeaserProgress,
 } from "./_components/quiz-teaser-progress";
 
-const trackEventSpy = vi.fn();
+const trackSpy = vi.fn();
 
-vi.mock("@/app/analytics-provider", () => ({
-  usePublicAnalytics: () => ({ trackEvent: trackEventSpy }),
+vi.mock("@/lib/umami", async importOriginal => ({
+  ...await importOriginal<typeof import("@/lib/umami")>(),
+  track: (name: string, data?: Record<string, string | number>) => trackSpy(name, data),
 }));
 
 function renderInContainer(ui: JSX.Element) {
@@ -89,7 +90,7 @@ afterEach(() => {
   window.localStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
-  trackEventSpy.mockClear();
+  trackSpy.mockClear();
 });
 
 describe("public quiz teaser widget", () => {
@@ -144,9 +145,9 @@ describe("public quiz teaser widget", () => {
       expect(stored.completedCuratedDays).toBe(1);
       expect(stored.lastResult?.date).toBe(getLocalDateKey());
       expect(stored.activeRound).toBeNull();
-      expect(trackEventSpy).toHaveBeenCalledWith(
-        "quiz_teaser_completed",
-        expect.objectContaining({ score: 5, day_number: 1, quiz_source: "curated" }),
+      expect(trackSpy).toHaveBeenCalledWith(
+        "quiz-complete",
+        { score: 5, total: 5 },
       );
     } finally {
       cleanup();
@@ -443,9 +444,9 @@ describe("public quiz teaser widget", () => {
         await Promise.resolve();
       });
 
-      expect(trackEventSpy).toHaveBeenCalledWith(
-        "quiz_teaser_started",
-        expect.objectContaining({ day_number: 7, quiz_source: "api" }),
+      expect(trackSpy).toHaveBeenCalledWith(
+        "quiz-start",
+        { day: 7 },
       );
       const stored = parseQuizTeaserProgress(
         window.localStorage.getItem(QUIZ_TEASER_PROGRESS_STORAGE_KEY),
@@ -469,9 +470,9 @@ describe("public quiz teaser widget", () => {
         await Promise.resolve();
       });
       expect(container.textContent).toContain("Das Quiz-Limit für heute ist erreicht.");
-      expect(trackEventSpy).toHaveBeenCalledWith(
-        "quiz_teaser_error",
-        expect.objectContaining({ error_code: "quiz_server_error" }),
+      expect(trackSpy).toHaveBeenCalledWith(
+        "quiz-error",
+        { code: "quiz_server_error" },
       );
     } finally {
       cleanup();

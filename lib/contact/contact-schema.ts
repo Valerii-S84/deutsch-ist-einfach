@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { contactAnalyticsContextSchema } from "../analytics/contract";
 
 export const STUDENT_LEVELS = ["A1", "A2", "B1", "B2", "C1_C2", "UNSICHER"] as const;
 export const STUDENT_GOALS = [
@@ -76,9 +75,8 @@ export type PartnerContactRequest = z.infer<typeof partnerContactRequestSchema>;
 export type ContactRequest = z.infer<typeof contactRequestSchema>;
 
 export function parseContactTransport(value: unknown) {
-  const { analytics, ...contact } = value !== null && typeof value === "object" && !Array.isArray(value)
+  const { analytics: _analytics, ...contact } = value !== null && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown> : { invalid: value };
   const validation = contactRequestSchema.safeParse(contact);
-  const context = contactAnalyticsContextSchema.safeParse(analytics);
-  return { validation, analytics: validation.success && context.success && context.data.form_id === validation.data.type ? context.data : undefined };
+  return { validation };
 }

@@ -4,10 +4,6 @@ import type { ContactRequest } from "@/lib/contact/contact-schema";
 import { saveContactRequest } from "@/lib/server/contact-store";
 
 import { handleContactSubmission } from "./contact-submission";
-import { sendContactSuccess } from "./contact-analytics";
-import { syntheticContactContext } from "@/lib/analytics/fixtures.test-support";
-
-vi.mock("./contact-analytics", () => ({ sendContactSuccess: vi.fn() }));
 
 vi.mock("@/lib/server/contact-store", () => ({
   saveContactRequest: vi.fn(),
@@ -48,20 +44,21 @@ afterEach(() => {
 });
 
 describe("contact submission boundary", () => {
-  it("sends success only after persistence completes, separately from the stored payload", async () => {
+  it("waits for persistence and stores no analytics context", async () => {
     let commit!: () => void;
     saveContactRequestMock.mockImplementationOnce(() => new Promise(resolve => { commit = () => resolve({} as Awaited<ReturnType<typeof saveContactRequest>>); }));
-    const context = syntheticContactContext();
-    const pending = handleContactSubmission(studentPayload, context);
-    expect(sendContactSuccess).not.toHaveBeenCalled(); commit(); await pending;
-    expect(sendContactSuccess).toHaveBeenCalledExactlyOnceWith(context);
+    let completed = false;
+    const pending = handleContactSubmission(studentPayload).then(() => { completed = true; });
+    expect(completed).toBe(false);
+    commit();
+    await pending;
+    expect(completed).toBe(true);
     expect(saveContactRequestMock.mock.calls[0][0]).not.toHaveProperty("analytics");
     expect(saveContactRequestMock.mock.calls[0][0]).not.toHaveProperty("visitor_id");
   });
-  it("a failed contact commit emits no success", async () => {
+  it("propagates a failed contact commit", async () => {
     saveContactRequestMock.mockRejectedValueOnce(new Error("synthetic DB failure"));
-    await expect(handleContactSubmission(studentPayload, syntheticContactContext())).rejects.toThrow();
-    expect(sendContactSuccess).not.toHaveBeenCalled();
+    await expect(handleContactSubmission(studentPayload)).rejects.toThrow();
   });
   it("persists the complete student payload without its honeypot", async () => {
     await handleContactSubmission(studentPayload);

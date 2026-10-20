@@ -10,7 +10,7 @@
     "lint": "eslint . --ext .js,.mjs,.cjs,.jsx,.ts,.mts,.cts,.tsx",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.reporter=text",
-    "test:analytics-seo": "vitest run app/(public)/analytics-provider.test.tsx app/(public)/public-home-analytics.test.tsx app/(public)/seo-contracts.test.ts app/(public)/accessibility-behavior.test.tsx",
+    "test:analytics-seo": "vitest run app/(public)/seo-contracts.test.ts app/(public)/accessibility-behavior.test.tsx",
     "typecheck": "tsc --noEmit",
     "analytics:build": "npm --prefix services/analytics run build",
     "analytics:migrate": "npm --prefix services/analytics run migrate",

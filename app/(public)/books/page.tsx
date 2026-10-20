@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { analyticsAttributes } from "@/lib/analytics/elements";
+import { trackAttributes } from "@/lib/umami";
 
 import { PublicLegalFooter } from "../_components/public-legal-footer";
 import { PublicSiteHeader } from "../_components/public-site-header";
@@ -207,7 +207,7 @@ export default function BooksPage() {
                   </p>
                   <a
                     href={format.href}
-                    {...analyticsAttributes(format.analyticsId, "books")}
+                    {...trackAttributes("amazon-click", { book: format.analyticsId === "book_print" ? "print" : "ebook" })}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`${format.cta} (öffnet in einem neuen Tab)`}

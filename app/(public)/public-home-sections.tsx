@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { analyticsAttributes } from "@/lib/analytics/elements";
-import { AnalyticsSettingsButton } from "@/app/analytics-settings-button";
+import { trackAttributes } from "@/lib/umami";
 
 import {
   PUBLIC_SITE_NAME,
@@ -59,8 +58,6 @@ type ProductCard = {
   imageSrc?: string;
   imageAlt?: string;
   download?: string;
-  analyticsEventName?: "hero_cta_click" | "channel_cta_click";
-  analyticsSection?: string;
   analyticsCta?: string;
 };
 
@@ -89,8 +86,6 @@ function getProjectCards(trackedTelegramBotUrl: string): ProductCard[] {
       actionLabel: "Bot öffnen",
       imageSrc: BOT_LOGO_PATH,
       imageAlt: `${QUIZ_PRODUCT_NAME} Logo`,
-      analyticsEventName: "hero_cta_click",
-      analyticsSection: "product_card",
       analyticsCta: "telegram_bot",
     },
     {
@@ -101,8 +96,6 @@ function getProjectCards(trackedTelegramBotUrl: string): ProductCard[] {
       actionLabel: "Kanal öffnen",
       imageSrc: CHANNEL_LOGO_PATH,
       imageAlt: "Deutsch ist einfach! Kanal Logo",
-      analyticsEventName: "channel_cta_click",
-      analyticsSection: "product_card",
       analyticsCta: "telegram_channel",
     },
     {
@@ -114,8 +107,6 @@ function getProjectCards(trackedTelegramBotUrl: string): ProductCard[] {
       actionLabel: "Trainer öffnen",
       imageSrc: DEUTSCH_TRAINER_LOGO_PATH,
       imageAlt: "Deutsch Trainer Bot Logo",
-      analyticsEventName: "hero_cta_click",
-      analyticsSection: "product_card",
       analyticsCta: "deutsch_trainer",
     },
   ];
@@ -175,14 +166,11 @@ function ProjectCard({ product }: { product: ProductCard }) {
         <p className="mt-3 text-sm leading-6 text-slate-300">{product.description}</p>
         <a
           href={product.href}
-          {...(product.analyticsCta ? analyticsAttributes(product.analyticsCta, "product_card", true) : {})}
+          {...(product.analyticsCta ? trackAttributes("telegram-click", { cta: product.analyticsCta, placement: "product_card" }) : {})}
           target={shouldOpenInNewTab ? "_blank" : undefined}
           rel={shouldOpenInNewTab ? "noreferrer" : undefined}
           download={product.download}
           aria-label={`${product.actionLabel}: ${product.title}`}
-          data-analytics-event={product.analyticsEventName}
-          data-analytics-section={product.analyticsSection}
-          data-analytics-cta={product.analyticsCta}
           className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#2AABEE]/30 bg-[#2AABEE]/10 px-4 py-2 text-center text-sm font-semibold leading-snug text-white transition hover:border-[#2AABEE]/70 hover:bg-[#2AABEE]/20 ${LINK_FOCUS_CLASS} sm:w-fit`}
         >
           {product.actionLabel}
@@ -213,10 +201,7 @@ export function PublicHomeHero({ trackedTelegramBotUrl }: PublicHomeHeroProps) {
           <a
             href="#quiz-teaser"
             className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
-            data-analytics-event="hero_cta_click"
-            data-analytics-section="hero"
-            data-analytics-cta="quiz_teaser_anchor"
-            {...analyticsAttributes("quiz_teaser_anchor", "hero", true)}
+            {...trackAttributes("hero-cta", { cta: "quiz_teaser_anchor" })}
           >
             Deutsch in 5 Fragen testen
           </a>
@@ -225,10 +210,7 @@ export function PublicHomeHero({ trackedTelegramBotUrl }: PublicHomeHeroProps) {
             target="_blank"
             rel="noreferrer"
             className={`w-full sm:w-auto ${SECONDARY_BUTTON_CLASS}`}
-            data-analytics-event="hero_cta_click"
-            data-analytics-section="hero"
-            data-analytics-cta="telegram_bot"
-            {...analyticsAttributes("telegram_bot", "hero", true)}
+            {...trackAttributes("telegram-click", { cta: "telegram_bot", placement: "hero" })}
           >
             Quiz-Bot auf Telegram öffnen
           </a>
@@ -386,10 +368,7 @@ export function PublicHomeChannelSection() {
           target="_blank"
           rel="noreferrer"
           className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
-          data-analytics-event="channel_cta_click"
-          data-analytics-section="channel"
-          data-analytics-cta="telegram_channel"
-          {...analyticsAttributes("telegram_channel", "channel", true)}
+          {...trackAttributes("telegram-click", { cta: "telegram_channel", placement: "channel" })}
         >
           Kanal öffnen
         </a>
@@ -505,7 +484,7 @@ export function PublicHomeFurtherProjectsSection() {
             <a
               key={project.title}
               href={project.href}
-              {...analyticsAttributes(project.analyticsId, "home_projects")}
+              {...(project.analyticsId === "shorts_blocker" ? trackAttributes("shorts-blocker-click") : {})}
               download={project.download}
               aria-label={`${project.title}: ${project.actionLabel}`}
               className={className}
@@ -516,7 +495,7 @@ export function PublicHomeFurtherProjectsSection() {
             <a
               key={project.title}
               href={project.href}
-              {...analyticsAttributes(project.analyticsId, "home_projects")}
+              {...(project.analyticsId === "shorts_blocker" ? trackAttributes("shorts-blocker-click") : {})}
               target="_blank"
               rel="noreferrer"
               aria-label={`${project.title}: ${project.actionLabel} (öffnet in einem neuen Tab)`}
@@ -528,7 +507,6 @@ export function PublicHomeFurtherProjectsSection() {
             <Link
               key={project.title}
               href={project.href}
-              {...analyticsAttributes(project.analyticsId, "home_projects")}
               aria-label={`${project.title}: ${project.actionLabel}`}
               className={className}
             >
@@ -568,7 +546,6 @@ export function PublicHomeKnowledgeSection() {
             <p className="mt-3 text-sm leading-6 text-slate-300">{article.description}</p>
             <Link
               href={`/artikel/${article.slug}`}
-              {...analyticsAttributes(`article_${article.slug}`, "home_articles")}
               aria-label={`Artikel lesen: ${article.title}`}
               className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/10 bg-white/[0.08] px-4 py-2 text-sm font-semibold text-white transition hover:border-[#FFD166]/70 hover:bg-[#FFD166]/10 ${LINK_FOCUS_CLASS} sm:w-fit`}
             >
@@ -580,7 +557,6 @@ export function PublicHomeKnowledgeSection() {
       <div className="mt-6 flex justify-center">
         <Link
           href="/wissen"
-          {...analyticsAttributes("nav_wissen", "home_articles")}
           className={`inline-flex min-h-11 items-center justify-center rounded-full border border-[#4DE2C6]/30 bg-[#4DE2C6]/10 px-5 py-2.5 text-sm font-semibold text-[#B9FFF2] transition hover:bg-[#4DE2C6]/20 ${LINK_FOCUS_CLASS}`}
         >
           Alle Artikel entdecken
@@ -614,7 +590,6 @@ export function PublicHomeContactSection({
             type="button"
             onClick={onOpenStudentWizard}
             data-wizard="student"
-            {...analyticsAttributes("student_form", "home_contact")}
             className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
           >
             Lernbegleitung anfragen
@@ -637,7 +612,6 @@ export function PublicHomeContactSection({
               type="button"
               onClick={onOpenPartnerWizard}
               data-wizard="partner"
-              {...analyticsAttributes("partner_form", "home_contact")}
               className={`mt-7 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#4DE2C6]/30 bg-[#4DE2C6]/10 px-5 py-2.5 text-center text-sm font-semibold leading-snug text-[#B9FFF2] transition hover:bg-[#4DE2C6]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B9FFF2] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f] sm:w-auto`}
             >
               Kooperation anfragen
@@ -684,19 +658,18 @@ export function PublicHomeFooter({ trackedTelegramBotUrl }: PublicHomeFooterProp
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p>© 2026 {PUBLIC_SITE_NAME}</p>
         <nav aria-label="Footer" className="flex min-w-0 flex-wrap gap-3">
-          <AnalyticsSettingsButton className={`transition hover:text-white ${LINK_FOCUS_CLASS}`} />
           <Link href="/impressum" className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}>
             Impressum
           </Link>
           <Link href="/privacy" className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}>
             Datenschutz
           </Link>
-          <Link {...analyticsAttributes("nav_contact", "footer")} href="/contact" className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}>
+          <Link href="/contact" className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}>
             Kontakt
           </Link>
           <a
             href={telegramUrl}
-            {...analyticsAttributes("telegram_bot", "footer")}
+            {...trackAttributes("telegram-click", { cta: "telegram_bot", placement: "footer" })}
             target="_blank"
             rel="noreferrer"
             className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}

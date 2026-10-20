@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 
-import { usePublicAnalytics } from "@/app/analytics-provider";
 
 declare global {
   interface Window {
@@ -76,7 +75,6 @@ function decodeArticleHash(hash: string): string | null {
 }
 
 export function ArticleInteractions({ articleSlug, defaultOpenSectionId }: ArticleInteractionsProps) {
-  const { trackEvent } = usePublicAnalytics();
 
   useEffect(() => {
     const previousToggleCard = window.toggleCard;
@@ -88,15 +86,6 @@ export function ArticleInteractions({ articleSlug, defaultOpenSectionId }: Artic
       document.querySelectorAll<HTMLAnchorElement>("[data-article-toc-link]"),
     );
     const disclosureCleanups: Array<() => void> = [];
-
-    const trackQuizCta = () => {
-      trackEvent("hero_cta_click", {
-        article_slug: articleSlug,
-        section: "article_kurzantwort",
-        cta: "telegram_bot",
-        destination: "telegram",
-      });
-    };
 
     window.toggleCard = toggleArticleSection;
     window.toggleEra = toggleArticleSection;
@@ -178,14 +167,12 @@ export function ArticleInteractions({ articleSlug, defaultOpenSectionId }: Artic
     revealLocationHash();
 
     quizCtas.forEach((cta) => {
-      cta.dataset.analyticsId = "telegram_bot";
-      cta.dataset.analyticsPlacement = "article_kurzantwort";
-      cta.dataset.analyticsExplicit = "true";
-      cta.addEventListener("click", trackQuizCta);
+      cta.dataset.track = "telegram-click";
+      cta.dataset.trackCta = "telegram_bot";
+      cta.dataset.trackPlacement = "article_kurzantwort";
     });
 
     return () => {
-      quizCtas.forEach((cta) => cta.removeEventListener("click", trackQuizCta));
       tocLinks.forEach((link) => link.removeEventListener("click", revealTocTarget));
       window.removeEventListener("hashchange", revealLocationHash);
       disclosureCleanups.forEach((cleanup) => cleanup());
@@ -202,7 +189,7 @@ export function ArticleInteractions({ articleSlug, defaultOpenSectionId }: Artic
         delete window.toggleEra;
       }
     };
-  }, [articleSlug, defaultOpenSectionId, trackEvent]);
+  }, [articleSlug, defaultOpenSectionId]);
 
   return null;
 }

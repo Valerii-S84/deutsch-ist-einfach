@@ -55,10 +55,11 @@ describe("public home scenarios", () => {
       <PublicHomeHero trackedTelegramBotUrl={trackedUrl} />,
     );
 
-    expect(html).toContain("data-analytics-event=\"hero_cta_click\"");
-    expect(html).toContain("data-analytics-section=\"hero\"");
-    expect(html).toContain("data-analytics-cta=\"telegram_bot\"");
-    expect(html).toContain("data-analytics-cta=\"quiz_teaser_anchor\"");
+    expect(html).toContain("data-track=\"hero-cta\"");
+    expect(html).toContain("data-track=\"telegram-click\"");
+    expect(html).toContain("data-track-cta=\"telegram_bot\"");
+    expect(html).toContain("data-track-cta=\"quiz_teaser_anchor\"");
+    expect(renderToStaticMarkup(<PublicHomeFooter />)).not.toContain("Analytics-Einstellungen");
   });
 
   it("includes section-level navigation in header with in-page targets", () => {

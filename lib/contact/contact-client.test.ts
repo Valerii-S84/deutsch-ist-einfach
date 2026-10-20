@@ -2,9 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CONTACT_ENDPOINT, submitContactRequest } from "./contact-client";
 import type { StudentContactRequest } from "./contact-schema";
-import { syntheticContactContext } from "@/lib/analytics/fixtures.test-support";
-import { WEBSITE_CONSENT_STORAGE_KEY } from "@/lib/analytics";
-import { VISITOR_KEY } from "@/lib/analytics/identity";
 
 const studentPayload: StudentContactRequest = {
   type: "student",
@@ -22,28 +19,19 @@ const studentPayload: StudentContactRequest = {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  vi.unstubAllEnvs(); localStorage.clear();
+  vi.restoreAllMocks();
 });
 
 describe("contact client", () => {
-  it.each(["granted", "denied", "pending"])("checks current %s consent immediately before the request", async consent => {
-    vi.stubEnv("NEXT_PUBLIC_WEBSITE_ANALYTICS_MODE", "new");
-    const context = syntheticContactContext();
-    localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, consent);
-    localStorage.setItem(VISITOR_KEY, JSON.stringify({ id: context.visitor_id, created: Date.now() }));
-    const send = vi.fn().mockResolvedValue(new Response(null, { status: 202 })); vi.stubGlobal("fetch", send);
-    await submitContactRequest(studentPayload, context);
-    const body = JSON.parse(send.mock.calls[0][1].body);
-    expect(body.analytics).toEqual(consent === "granted" ? context : undefined);
-    expect(body.contact).toBe(studentPayload.contact);
-  });
-  it("drops old context after revoke/regrant rotates the visitor", async () => {
-    vi.stubEnv("NEXT_PUBLIC_WEBSITE_ANALYTICS_MODE", "new");
-    localStorage.setItem(WEBSITE_CONSENT_STORAGE_KEY, "granted");
-    localStorage.setItem(VISITOR_KEY, JSON.stringify({ id: crypto.randomUUID(), created: Date.now() }));
-    const send = vi.fn().mockResolvedValue(new Response(null, { status: 202 })); vi.stubGlobal("fetch", send);
-    await submitContactRequest(studentPayload, syntheticContactContext());
-    expect(JSON.parse(send.mock.calls[0][1].body)).not.toHaveProperty("analytics");
+  it("sends only the payload without reading browser storage", async () => {
+    const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("storage must not be read"); });
+    const send = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", send);
+    await submitContactRequest(studentPayload);
+    const body = JSON.parse(send.mock.calls[0][1]!.body as string);
+    expect(body).toEqual(studentPayload);
+    expect(body).not.toHaveProperty("analytics");
+    expect(read).not.toHaveBeenCalled();
   });
   it("posts the payload to the fixed same-origin endpoint without credentials", async () => {
     const fetchSpy = vi.fn<typeof fetch>().mockResolvedValue(
