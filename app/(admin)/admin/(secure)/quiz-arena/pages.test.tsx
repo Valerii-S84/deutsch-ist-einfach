@@ -238,10 +238,10 @@ describe("successful Quiz Arena admin pages", () => {
       { id: 2, telegram_user_id: 102, username: null, first_name: "Ben", language: null, status: "BLOCKED", created_at: "2026-09-02T00:00:00Z", last_seen_at: null, streak: 0, daily_challenge_score: 0, daily_challenge_completed_runs: 0 },
       { id: 3, telegram_user_id: 103, username: null, first_name: null, language: "uk", status: "PENDING", created_at: "2026-09-03T00:00:00Z", last_seen_at: null, streak: 2, daily_challenge_score: 50, daily_challenge_completed_runs: 2 },
     ];
-    vi.mocked(useQuery).mockImplementation((options?: { queryKey?: unknown[] }) => {
+    vi.mocked(useQuery).mockImplementation(((options?: { queryKey?: unknown[] }) => {
       const page = Number(options?.queryKey?.[1] ?? 1);
       return queryResult({ items: users, total: 103, page, pages: 2 }, page === 2 ? { isFetching: true } : {});
-    });
+    }) as never);
 
     const container = document.createElement("div");
     let root: Root | undefined;

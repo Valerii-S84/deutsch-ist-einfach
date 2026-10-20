@@ -5,10 +5,8 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
-  PublicHomeChannelSection,
   PublicHomeContactSection,
   PublicHomeFooter,
-  PublicHomeFurtherProjectsSection,
   PublicHomeHero,
   PublicHomeKnowledgeSection,
   PublicHomeProductsSection,
@@ -91,26 +89,6 @@ describe("public home scenarios", () => {
 
     expect(html).toContain(`© 2026 ${PUBLIC_SITE_NAME}`);
     expect(html).not.toContain("© 2026 Deutsch Quiz Arena");
-    expect(html).toContain('href="https://www.youtube.com/@KommmitaufDeutsch"');
-    expect(html).toContain('data-track="youtube-click"');
-    expect(html).toContain('data-track-placement="footer"');
-    expect(html).toContain('rel="noopener noreferrer"');
-  });
-
-  it("links to the YouTube channel alongside the Telegram channel without embeds", () => {
-    const html = renderToStaticMarkup(<PublicHomeChannelSection />);
-
-    expect(html).toContain("Kanal öffnen");
-    expect(html).toContain("YouTube-Kanal");
-    expect(html).toContain('href="https://www.youtube.com/@KommmitaufDeutsch"');
-    expect(html).toContain('data-track="youtube-click"');
-    expect(html).toContain('data-track-placement="channel"');
-    expect(html).toContain('target="_blank"');
-    expect(html).toContain('rel="noopener noreferrer"');
-    expect(html).toContain('aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)"');
-    expect(html).not.toContain("<iframe");
-    expect(html).not.toContain("youtube-nocookie");
-    expect(html).not.toContain("ytimg");
   });
 
   it("renders the knowledge section links for all configured article slugs", () => {
@@ -144,7 +122,7 @@ describe("public home scenarios", () => {
     expect(html.match(/id="projects"/g)).toHaveLength(1);
   });
 
-  it("keeps three German-learning offers in one consistent product grid", () => {
+  it("keeps five German-learning offers in one consistent product grid", () => {
     const trackedUrl = buildTrackedTelegramBotUrl(
       getTelegramBotUrl(),
       TELEGRAM_BOT_START_PAYLOAD,
@@ -157,25 +135,26 @@ describe("public home scenarios", () => {
     expect(html).toContain("Deutsch ist einfach!");
     expect(html).toContain("Deutsch Trainer Bot");
     expect(html).not.toContain("Worklog");
-    expect(html.match(/<article/g)).toHaveLength(3);
+    expect(html.match(/<article/g)).toHaveLength(5);
     expect(html).toContain('sizes="(min-width: 1024px) 352px');
-    expect(html.match(/alt=""/g)).toHaveLength(3);
-  });
-
-  it("shows non-learning projects separately with honest link behavior", () => {
-    const html = renderToStaticMarkup(<PublicHomeFurtherProjectsSection />);
-
-    expect(html).toContain("Weitere Projekte");
-    expect(html).not.toContain("Worklog");
-    expect(html).not.toContain(".apk");
-    expect(html).not.toContain("download=");
-    expect(html).not.toContain('href="/contact"');
-    expect(html).toContain("Bücher");
-    expect(html).toContain('href="/books"');
-    expect(html).toContain("Deutsch für Elektriker als Printausgabe und Kindle-eBook");
-    expect(html).not.toContain("Shorts Blocker Kids");
-    expect(html).not.toContain("shortsblockerkids");
-    expect(html).not.toContain('target="_blank"');
+    expect(html.match(/alt=""/g)).toHaveLength(5);
+    expect(html).toContain("Komm mit auf Deutsch");
+    expect(html).toContain('href="https://www.youtube.com/@KommmitaufDeutsch"');
+    expect(html).toContain('data-track="youtube-click"');
+    expect(html).toContain('data-track-cta="youtube_channel"');
+    expect(html).toContain('data-track-placement="product_card"');
+    expect(html).toContain('aria-label="Kanal ansehen: Komm mit auf Deutsch"');
+    expect(html).toContain("Quiz, tägliche Lernimpulse, persönliches Training, Lernvideos und ein Fachbuch.");
+    expect(html).toContain("Deutsch für Elektriker");
+    expect(html).toContain('href="https://www.amazon.de/dp/B0HBLTQ9SZ"');
+    expect(html).toContain('data-track="amazon-click"');
+    expect(html).toContain('data-track-cta="book_print"');
+    expect(html).toContain('aria-label="Bei Amazon ansehen: Deutsch für Elektriker"');
+    expect(html).toContain("lg:grid-cols-3");
+    for (const label of ["Telegram Quiz Bot", "Telegram-Kanal", "Persönliches Training", "YouTube-Kanal"]) {
+      expect(html).not.toContain(">" + label + "<");
+    }
+    expect(html).not.toContain("<iframe");
   });
 
   it("labels fresh and unavailable statistics without inventing a timestamp", () => {

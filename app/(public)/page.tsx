@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import {
   PublicHomeContactSection,
   PublicHomeFooter,
-  PublicHomeFurtherProjectsSection,
   PublicHomeHero,
   PublicHomeKnowledgeSection,
   PublicHomeProductsSection,
@@ -82,7 +81,6 @@ export default async function PublicHomePage() {
           <PublicHomeProductsSection trackedTelegramBotUrl={trackedTelegramBotUrl} />
           <PublicHomeKnowledgeSection />
           <PublicHomeContactSection />
-          <PublicHomeFurtherProjectsSection />
           <PublicHomeFooter trackedTelegramBotUrl={trackedTelegramBotUrl} />
         </div>
       </main>

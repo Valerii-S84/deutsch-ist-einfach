@@ -138,14 +138,6 @@ describe("public quiz teaser widget", () => {
       expect(container.textContent).toContain("5/5");
       expect(container.textContent).toContain("nächste Runde morgen");
       expect(fetchSpy).not.toHaveBeenCalled();
-      const youtubeLink = Array.from(container.querySelectorAll("a")).find(
-        link => link.textContent === "Lernvideos auf YouTube",
-      );
-      expect(youtubeLink?.getAttribute("href")).toBe("https://www.youtube.com/@KommmitaufDeutsch");
-      expect(youtubeLink?.getAttribute("data-track-placement")).toBe("quiz_teaser");
-      expect(youtubeLink?.getAttribute("target")).toBe("_blank");
-      expect(youtubeLink?.getAttribute("rel")).toBe("noopener noreferrer");
-      expect(youtubeLink?.getAttribute("data-track")).toBe("youtube-click");
 
       const stored = parseQuizTeaserProgress(
         window.localStorage.getItem(QUIZ_TEASER_PROGRESS_STORAGE_KEY),

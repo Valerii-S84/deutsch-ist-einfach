@@ -4,13 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSiteAdminSession, SITE_ADMIN_SESSION_COOKIE } from "@/lib/server/site-admin-auth";
 import { proxyQuizArena } from "@/lib/server/quiz-arena-proxy";
-import { readSiteAnalyticsOverview } from "@/lib/server/site-analytics-store";
+import { readSiteContactRequests } from "@/lib/server/contact-store";
 import { POST as login } from "./route";
 import { POST as logout } from "../logout/route";
-import { GET as analytics } from "../website-analytics/overview/route";
+import { GET as contactRequests } from "../contact-requests/route";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/server/site-analytics-store", () => ({ readSiteAnalyticsOverview: vi.fn() }));
+vi.mock("@/lib/server/contact-store", () => ({ CONTACT_REQUEST_STATUSES: ["NEW", "IN_PROGRESS", "DONE", "SPAM"], readSiteContactRequests: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, pages: 1 }) }));
 
 const origin = "https://site.example";
 const credentials = { email: "admin@example.com", password: "site-test-password" };
@@ -37,7 +37,6 @@ beforeEach(() => {
   vi.useFakeTimers();
   clock += 120_000;
   vi.setSystemTime(clock);
-  vi.mocked(readSiteAnalyticsOverview).mockResolvedValue({ days: 7 } as never);
 });
 
 afterEach(() => {
@@ -104,18 +103,18 @@ describe("local admin login/logout boundary with Quiz Arena OFF", () => {
     expect(cookieHeader).not.toMatch(/Domain=/i);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
 
-    const privateRequest = (value: string) => new NextRequest(`${origin}/api/admin/website-analytics/overview`, {
+    const privateRequest = (value: string) => new NextRequest(`${origin}/api/admin/contact-requests`, {
       headers: { cookie: `${SITE_ADMIN_SESSION_COOKIE}=${value}` },
     });
-    expect((await analytics(privateRequest(cookie.value))).status).toBe(200);
-    expect(readSiteAnalyticsOverview).toHaveBeenCalledExactlyOnceWith(7);
+    expect((await contactRequests(privateRequest(cookie.value))).status).toBe(200);
+    expect(readSiteContactRequests).toHaveBeenCalledExactlyOnceWith(1);
 
     const loggedOut = await logout(request("logout", "", { cookie: `${cookie.name}=${cookie.value}` }));
     expect(loggedOut.status).toBe(303);
     expect(loggedOut.headers.get("location")).toBe("/admin/login");
     expect(loggedOut.headers.get("set-cookie")).toContain("Max-Age=0");
     expect(loggedOut.cookies.get(SITE_ADMIN_SESSION_COOKIE)?.path).toBe("/");
-    expect((await analytics(privateRequest(loggedOut.cookies.get(SITE_ADMIN_SESSION_COOKIE)!.value))).status).toBe(401);
+    expect((await contactRequests(privateRequest(loggedOut.cookies.get(SITE_ADMIN_SESSION_COOKIE)!.value))).status).toBe(401);
     expect(fetch).not.toHaveBeenCalled();
   });
 

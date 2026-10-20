@@ -186,9 +186,9 @@ describe("promo form state", () => {
   it("formats promo list and detail labels without losing fallback states", () => {
     expect(formatPromoDateTime(null)).toBe("Ohne Enddatum");
     expect(formatPromoDateTime("2026-09-14T10:00:00Z")).not.toBe("Ohne Enddatum");
-    expect(formatPromoProducts(null, [{ id: "worklog", title: "Worklog" }])).toBe("Alle Produkte");
-    expect(formatPromoProducts([], [{ id: "worklog", title: "Worklog" }])).toBe("Alle Produkte");
-    expect(formatPromoProducts(["worklog", "unknown"], [{ id: "worklog", title: "Worklog" }])).toBe("Worklog, unknown");
+    expect(formatPromoProducts(null, [{ id: "worklog", title: "Worklog", product_type: "WORKLOG", stars_amount: 100 }])).toBe("Alle Produkte");
+    expect(formatPromoProducts([], [{ id: "worklog", title: "Worklog", product_type: "WORKLOG", stars_amount: 100 }])).toBe("Alle Produkte");
+    expect(formatPromoProducts(["worklog", "unknown"], [{ id: "worklog", title: "Worklog", product_type: "WORKLOG", stars_amount: 100 }])).toBe("Worklog, unknown");
     expect(formatPromoDiscount({ discount_type: "FREE", discount_value: null })).toBe("Kostenlos");
     expect(formatPromoDiscount({ discount_type: "FIXED", discount_value: 25 })).toBe("25⭐ Festbetrag");
     expect(formatPromoDiscount({ discount_type: "PERCENT", discount_value: null })).toBe("0% Rabatt");

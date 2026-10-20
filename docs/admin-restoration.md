@@ -40,28 +40,14 @@
 
 Вхід `/admin` та успішний site login тепер ведуть до захищеного `/admin/products`.
 Картки походять із чинного реєстру, перемикання «Усі продукти» доступне у secure layout.
-Маршрути продуктів у таблиці збережені. Deutsch Trainer та Shorts Blocker Kids явно
-показують «Джерело не підключено». Адаптер, меню, ролі, 2FA й дії Quiz Arena не змінені.
-Окрема основа Website Analytics v2 не замінює старий dashboard або заявки/архів.
-Докази локальної зміни: [кроки 1–2 Website Analytics](website-analytics-steps-1-2-evidence.md).
-
-Публічний producer і consent кроку 3 не замінюють dashboard/API, заявки/архів або
-Quiz Arena. Інвентар до/після й докази: [крок 3](website-analytics-step-3-evidence.md).
-
-Крок 4 додає тільки публічні producers і окреме analytics-підтвердження після commit
-контактної заявки. Маршрути, доступ, формули та дії Admin/Quiz Arena не змінено.
-Браузерне приймання підтвердило доступ до заявки через чинний список/API при
-зупиненому analytics; нові analytics-події не пишуться у стару статистику чи архів.
-Повторені перевірки доступу та точні межі — [докази кроку 4](website-analytics-step-4-evidence.md).
 
 Реєстр: `lib/admin-products.ts`. Новий продукт додає стабільний id, маршрут, окремий контракт, окрему авторизацію джерела та окремі query keys/клієнт. `quiz-arena-provider.tsx` має власний QueryClient, який не ділить кеш із сайтом.
 
 | Продукт | Маршрут | Джерело / стан |
 |---|---|---|
 | Quiz Arena Bot | `/admin/quiz-arena/dashboard` та вкладені розділи | Явно налаштований backend; Partial |
-| Сайт deutschmit.de | `/admin/deutschmit` → `/admin/deutschmit/overview`; `/sessions` та Explorer, `/pages`, `/events`, `/traffic`, `/conversions` всередині Website | Website Analytics v2. `/admin/dashboard` збережений як «Стара статистика сайту»; заявки й архів доступні окремо. [Приймання кроку 5](website-analytics-step-5-evidence.md), [крок 6](website-analytics-step-6-evidence.md) |
+| Сайт deutschmit.de | `/admin/deutschmit` → `/admin/deutschmit/requests` | Заявки; статистика відвідувань — Umami |
 | Deutsch Trainer Bot | `/admin/deutsch-trainer` | Каркас; у репозиторії є лише публічне посилання, API статистики не знайдено |
-| Сайт Shorts Blocker Kids | `/admin/shorts-blocker-kids` | Каркас; джерело статистики сайту не знайдено; показники застосунку не підставляються |
 
 ## Контракт підключення Quiz Arena
 
@@ -144,7 +130,7 @@ login/2FA, користувачів і промокодів із persisted readb
 максимум 798.7/177.3 ms.
 
 Версія збірки, межі доказів, запуск і повернення записані в
-[чинному протоколі](statistics-manual-verification.md). Production env/дані,
+чинному протоколі. Production env/дані,
 commit і deploy не використовувалися; фактичне перемикання не виконане.
 
 

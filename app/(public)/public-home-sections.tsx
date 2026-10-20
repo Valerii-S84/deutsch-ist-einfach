@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { trackAttributes } from "@/lib/umami";
+import { trackAttributes, type UmamiEvent } from "@/lib/umami";
 
 import {
+  PUBLIC_BOOK_AMAZON_URL,
   PUBLIC_SITE_NAME,
   PUBLIC_YOUTUBE_CHANNEL_URL,
   QUIZ_PRODUCT_NAME,
@@ -52,7 +53,6 @@ type PublicHomeFooterProps = {
 
 type ProductCard = {
   title: string;
-  eyebrow: string;
   description: string;
   href: string;
   actionLabel: string;
@@ -60,6 +60,7 @@ type ProductCard = {
   imageAlt?: string;
   download?: string;
   analyticsCta?: string;
+  analyticsEvent?: UmamiEvent;
 };
 
 const LINK_FOCUS_CLASS =
@@ -81,8 +82,7 @@ function getProjectCards(trackedTelegramBotUrl: string): ProductCard[] {
   return [
     {
       title: QUIZ_PRODUCT_NAME,
-      eyebrow: "Telegram Quiz Bot",
-      description: "Tägliche Quizrunden, Duelle, Streaks und Fortschritt direkt in Telegram.",
+      description: "Tägliche Quizrunden und Duelle direkt in Telegram.",
       href: trackedTelegramBotUrl,
       actionLabel: "Bot öffnen",
       imageSrc: BOT_LOGO_PATH,
@@ -91,8 +91,7 @@ function getProjectCards(trackedTelegramBotUrl: string): ProductCard[] {
     },
     {
       title: "Deutsch ist einfach!",
-      eyebrow: "Telegram-Kanal",
-      description: "Kurze Lernposts, Redemittel, Mini-Übungen und Impulse für den Alltag.",
+      description: "Kurze Lernimpulse für jeden Tag.",
       href: getTelegramChannelUrl(),
       actionLabel: "Kanal öffnen",
       imageSrc: CHANNEL_LOGO_PATH,
@@ -101,44 +100,34 @@ function getProjectCards(trackedTelegramBotUrl: string): ProductCard[] {
     },
     {
       title: "Deutsch Trainer Bot",
-      eyebrow: "Persönliches Training",
-      description:
-        "Kurze Deutsch-Quizsessions mit Fortschritt, Wiederholungen und direktem Feedback.",
+      description: "Persönliches Training mit direktem Feedback.",
       href: getDeutschTrainerBotUrl(),
       actionLabel: "Trainer öffnen",
       imageSrc: DEUTSCH_TRAINER_LOGO_PATH,
       imageAlt: "Deutsch Trainer Bot Logo",
       analyticsCta: "deutsch_trainer",
     },
+    {
+      title: "Komm mit auf Deutsch",
+      description: "Lernvideos zu Grammatik, Wortschatz und Alltag.",
+      href: PUBLIC_YOUTUBE_CHANNEL_URL,
+      actionLabel: "Kanal ansehen",
+      imageSrc: "/logo/youtube-logo.svg",
+      imageAlt: "Komm mit auf Deutsch Kanal Logo",
+      analyticsCta: "youtube_channel",
+      analyticsEvent: "youtube-click",
+    },
+    {
+      title: "Deutsch für Elektriker",
+      description: "Fachdeutsch als Taschenbuch und Kindle-eBook.",
+      href: PUBLIC_BOOK_AMAZON_URL,
+      actionLabel: "Bei Amazon ansehen",
+      imageSrc: "/books/deutsch-fuer-elektriker-cover.jpg",
+      imageAlt: "Deutsch für Elektriker Buchcover",
+      analyticsCta: "book_print",
+      analyticsEvent: "amazon-click",
+    },
   ];
-}
-
-function ProductIcon({ product }: { product: ProductCard }) {
-  if (product.imageSrc && product.imageAlt) {
-    return (
-      <span
-        aria-hidden="true"
-        className="relative h-10 w-10 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:h-11 sm:w-11"
-      >
-        <Image
-          src={product.imageSrc}
-          alt=""
-          fill
-          sizes="44px"
-          className="object-cover"
-        />
-      </span>
-    );
-  }
-
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#FFD166]/30 bg-[#FFD166]/10 text-sm font-bold text-[#FFD166] sm:h-11 sm:w-11"
-    >
-      {product.title.slice(0, 2).toUpperCase()}
-    </span>
-  );
 }
 
 function ProjectCard({ product }: { product: ProductCard }) {
@@ -146,33 +135,30 @@ function ProjectCard({ product }: { product: ProductCard }) {
 
   return (
     <article className={`${GLASS_CARD_CLASS} flex h-full min-w-0 flex-col overflow-hidden`}>
-      <div className="relative aspect-[16/9] overflow-hidden border-b border-white/10 bg-[#07111f] p-6 sm:p-8">
+      <div className="relative aspect-[4/3] overflow-hidden border-b border-white/10 bg-[#07111f] p-2 sm:p-3">
         {product.imageSrc ? (
           <Image
             src={product.imageSrc}
             alt=""
             fill
             sizes="(min-width: 1024px) 352px, (min-width: 640px) calc(50vw - 2rem), calc(100vw - 2rem)"
-            className="object-contain p-6 sm:p-8"
+            className="object-contain p-2 sm:p-3"
           />
         ) : null}
       </div>
       <div className="flex flex-1 flex-col p-4 sm:p-6">
-        <p className="w-fit rounded-full border border-[#4DE2C6]/25 bg-[#4DE2C6]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#B9FFF2]">
-          {product.eyebrow}
-        </p>
-        <h3 className="mt-4 break-words text-xl font-semibold leading-tight text-white sm:text-2xl">
+        <h3 className="break-words text-xl font-semibold leading-tight text-white sm:text-2xl">
           {product.title}
         </h3>
-        <p className="mt-3 text-sm leading-6 text-slate-300">{product.description}</p>
+        <p className="mt-3 mb-6 text-sm leading-6 text-slate-300">{product.description}</p>
         <a
           href={product.href}
-          {...(product.analyticsCta ? trackAttributes("telegram-click", { cta: product.analyticsCta, placement: "product_card" }) : {})}
+          {...(product.analyticsCta ? trackAttributes(product.analyticsEvent ?? "telegram-click", { cta: product.analyticsCta, placement: "product_card" }) : {})}
           target={shouldOpenInNewTab ? "_blank" : undefined}
           rel={shouldOpenInNewTab ? "noreferrer" : undefined}
           download={product.download}
           aria-label={`${product.actionLabel}: ${product.title}`}
-          className={`mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#2AABEE]/30 bg-[#2AABEE]/10 px-4 py-2 text-center text-sm font-semibold leading-snug text-white transition hover:border-[#2AABEE]/70 hover:bg-[#2AABEE]/20 ${LINK_FOCUS_CLASS} sm:w-fit`}
+          className={`mt-auto inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[#2AABEE]/30 bg-[#2AABEE]/10 px-4 py-2 text-center text-sm font-semibold leading-snug text-white transition hover:border-[#2AABEE]/70 hover:bg-[#2AABEE]/20 ${LINK_FOCUS_CLASS} sm:w-fit`}
         >
           {product.actionLabel}
         </a>
@@ -334,62 +320,6 @@ export function PublicHomeQuizTeaserSection({
   );
 }
 
-export function PublicHomeChannelSection() {
-  const telegramChannelUrl = getTelegramChannelUrl();
-
-  return (
-    <section id="channel" className="scroll-mt-24 py-6">
-      <div
-        className={`${GLASS_CARD_CLASS} flex min-w-0 flex-col gap-5 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6`}
-      >
-        <div className="flex min-w-0 items-start gap-4">
-          <ProductIcon
-            product={{
-              title: "Deutsch ist einfach!",
-              eyebrow: "Telegram-Kanal",
-              description: "",
-              href: telegramChannelUrl,
-              actionLabel: "Kanal öffnen",
-              imageSrc: CHANNEL_LOGO_PATH,
-              imageAlt: "Deutsch ist einfach! Kanal Logo",
-            }}
-          />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#4DE2C6]">Telegram-Kanal</p>
-            <h3 className="mt-1 break-words text-lg font-semibold text-white sm:text-xl">
-              Deutsch ist einfach!
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              Kurze Lernposts, Mini-Übungen, Dialoge und alltagstaugliche Redemittel.
-            </p>
-          </div>
-        </div>
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-          <a
-            href={telegramChannelUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
-            {...trackAttributes("telegram-click", { cta: "telegram_channel", placement: "channel" })}
-          >
-            Kanal öffnen
-          </a>
-          <a
-            href={PUBLIC_YOUTUBE_CHANNEL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)"
-            {...trackAttributes("youtube-click", { placement: "channel" })}
-            className={`w-full sm:w-auto ${SECONDARY_BUTTON_CLASS}`}
-          >
-            YouTube-Kanal
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function PublicHomeProductsSection({
   trackedTelegramBotUrl,
 }: PublicHomeProductsSectionProps = {}) {
@@ -405,89 +335,13 @@ export function PublicHomeProductsSection({
           </h2>
         </div>
         <p className="max-w-xl text-sm leading-6 text-slate-300">
-          Drei klare Wege für kurze Quizrunden, tägliche Lernimpulse und persönliches Training.
+          Quiz, tägliche Lernimpulse, persönliches Training, Lernvideos und ein Fachbuch.
         </p>
       </div>
       <div className="mt-6 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {productCards.map((product) => (
           <ProjectCard key={product.title} product={product} />
         ))}
-      </div>
-    </section>
-  );
-}
-
-export function PublicHomeFurtherProjectsSection() {
-  const furtherProjects = [
-    {
-      title: "Bücher",
-      category: "Lesen & Lernen",
-      description:
-        "Deutsch für Elektriker als Printausgabe und Kindle-eBook – weitere Titel folgen.",
-      href: "/books",
-      actionLabel: "Bücher entdecken",
-      imageSrc: undefined,
-      badge: "Bü",
-    },
-  ] as const;
-
-  return (
-    <section id="further-projects" className="scroll-mt-24 py-8 sm:py-10">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-400">Außerdem von uns</p>
-        <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Weitere Projekte</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-          Bücher als Ergänzung zu unseren digitalen Lernformaten.
-        </p>
-      </div>
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
-        {furtherProjects.map((project) => {
-          const content = (
-            <>
-              <span
-                aria-hidden="true"
-                className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[#07111f] text-xs font-bold text-[#FFD166]"
-              >
-                {project.imageSrc ? (
-                  <Image
-                    src={project.imageSrc}
-                    alt=""
-                    fill
-                    sizes="48px"
-                    className="object-contain p-2"
-                  />
-                ) : (
-                  project.badge
-                )}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  {project.category}
-                </span>
-                <span className="mt-1 block text-lg font-semibold text-white">{project.title}</span>
-                <span className="mt-2 block text-sm leading-6 text-slate-300">
-                  {project.description}
-                </span>
-                <span className="mt-4 block text-sm font-semibold text-[#B9FFF2]">
-                  {project.actionLabel} <span aria-hidden="true">→</span>
-                </span>
-              </span>
-            </>
-          );
-
-          const className = `flex min-w-0 items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:border-[#4DE2C6]/30 hover:bg-white/[0.07] sm:p-5 ${LINK_FOCUS_CLASS}`;
-
-          return (
-            <Link
-              key={project.title}
-              href={project.href}
-              aria-label={`${project.title}: ${project.actionLabel}`}
-              className={className}
-            >
-              {content}
-            </Link>
-          );
-        })}
       </div>
     </section>
   );
@@ -649,16 +503,6 @@ export function PublicHomeFooter({ trackedTelegramBotUrl }: PublicHomeFooterProp
             className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}
           >
             Telegram
-          </a>
-          <a
-            href={PUBLIC_YOUTUBE_CHANNEL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="YouTube-Kanal „Komm mit auf Deutsch“ öffnen (öffnet in einem neuen Tab)"
-            {...trackAttributes("youtube-click", { placement: "footer" })}
-            className={`transition hover:text-white ${LINK_FOCUS_CLASS}`}
-          >
-            YouTube
           </a>
         </nav>
       </div>

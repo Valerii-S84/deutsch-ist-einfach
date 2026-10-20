@@ -1,5 +1,4 @@
 "use client";
-import { DeutschmitNavigation } from "../analytics-ui";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -22,7 +21,6 @@ export default function ContactRequests({ archiveOnly = false }: { archiveOnly?:
     if (result.status !== status || String(result.id) !== String(id)) throw new Error("STATUS_NOT_CONFIRMED");
   }, onSuccess: async () => { await client.invalidateQueries({ queryKey: ["site-contacts", source] }); setNotice("Статус збережено; список оновлено."); }, onError: () => setNotice("Зміну не підтверджено або статус уже змінено іншим запитом. Оновіть список перед повторенням.") });
   return <main className="surface space-y-4 rounded-2xl p-5">
-    {archiveOnly ? null : <DeutschmitNavigation active="requests" />}
     <h2 className="text-3xl">{source === "legacy" ? "Архів заявок Quiz Arena" : source === "test" ? "Тестові заявки deutschmit.de" : "Контактні заявки deutschmit.de"}</h2>
     <p>Керування заявками збережене окремо від аналітики. Тексти форм не надсилаються в аналітичні події.</p>
     <select aria-label="Джерело заявок" disabled={mutation.isPending || archiveOnly} value={source} onChange={event => { setSource(event.target.value); setPage(1); setNotice(""); }}><option value="site">Робочі заявки сайту</option><option value="test">Тестові заявки</option><option value="legacy">Архів сайту в Quiz Arena backend</option></select>

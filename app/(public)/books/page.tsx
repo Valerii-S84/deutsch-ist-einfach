@@ -4,9 +4,8 @@ import { trackAttributes } from "@/lib/umami";
 
 import { PublicLegalFooter } from "../_components/public-legal-footer";
 import { PublicSiteHeader } from "../_components/public-site-header";
-import { PUBLIC_SITE_NAME, getSiteUrl } from "@/lib/public-site-config";
+import { PUBLIC_BOOK_AMAZON_URL, PUBLIC_SITE_NAME, getSiteUrl } from "@/lib/public-site-config";
 
-const PRINT_BOOK_URL = "https://www.amazon.de/dp/B0HBLTQ9SZ";
 const EBOOK_URL = "https://www.amazon.de/dp/B0HBLRJB2S";
 
 const BOOK_DESCRIPTION =
@@ -55,7 +54,7 @@ function buildBooksStructuredData() {
           name: "Deutsch für Elektriker – Printausgabe",
           bookFormat: "https://schema.org/Paperback",
           isbn: "979-8188659202",
-          url: PRINT_BOOK_URL,
+          url: PUBLIC_BOOK_AMAZON_URL,
         },
         {
           "@type": "Book",
@@ -82,7 +81,7 @@ const formats = [
     eyebrow: "120 Seiten · Taschenbuch",
     description:
       "Zum Markieren, Nachschlagen und Lernen ohne Bildschirm.",
-    href: PRINT_BOOK_URL,
+    href: PUBLIC_BOOK_AMAZON_URL,
     cta: "Printausgabe bei Amazon ansehen",
   },
   {
