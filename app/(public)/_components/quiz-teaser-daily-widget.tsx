@@ -362,7 +362,7 @@ export function PublicHomeQuizTeaserDailyWidget({ trackedTelegramBotUrl }: Props
   return (
     <div className="min-w-0 rounded-2xl border border-white/10 bg-[#07111f]/80 p-4 shadow-[0_18px_46px_rgba(0,0,0,0.24)] sm:rounded-3xl sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-[#4DE2C6]">5-Fragen-Test</p>
+        <p className="text-sm font-semibold text-[#4DE2C6]">Tägliches Quiz</p>
         <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold text-slate-300">
           {stage === "question" || stage === "loading"
             ? `Frage ${shownIndex} von ${QUESTIONS_PER_QUIZ_DAY}`

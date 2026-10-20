@@ -181,8 +181,7 @@ export function PublicHomeHero({ trackedTelegramBotUrl }: PublicHomeHeroProps) {
           Deutsch lernen. Wissen testen. Jeden Tag Fortschritte machen.
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">
-          Finde in fünf kurzen Fragen heraus, wo du stehst. Du bekommst sofort ein Ergebnis und
-          kannst danach mit passenden Quizrunden, Lernimpulsen und Erklärungen weiterlernen.
+          Jeden Tag 5 neue Fragen von A1 bis B2, mit Erklärung zu jeder Antwort. Mehr Übungen findest du danach im Quiz-Bot.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <a
@@ -190,7 +189,7 @@ export function PublicHomeHero({ trackedTelegramBotUrl }: PublicHomeHeroProps) {
             className={`w-full sm:w-auto ${ORANGE_BUTTON_CLASS}`}
             {...trackAttributes("hero-cta", { cta: "quiz_teaser_anchor" })}
           >
-            Deutsch in 5 Fragen testen
+            Heutiges Quiz starten
           </a>
           <a
             href={trackedTelegramBotUrl}
@@ -207,13 +206,13 @@ export function PublicHomeHero({ trackedTelegramBotUrl }: PublicHomeHeroProps) {
       <aside className={`${GLASS_CARD_CLASS} min-w-0 p-5 sm:p-7`} aria-label="Dein schneller Einstieg">
         <p className="text-sm font-semibold text-[#FFD166]">Dein schneller Einstieg</p>
         <h2 className="mt-2 break-words text-xl font-semibold leading-tight text-white sm:text-2xl">
-          In fünf Fragen zum nächsten Lernschritt.
+          Dein tägliches Deutsch-Quiz
         </h2>
         <ol className="mt-6 grid gap-4">
           {[
-            ["Kurz testen", "Beantworte fünf abwechslungsreiche Deutschfragen."],
-            ["Ergebnis sehen", "Erhalte direkt eine klare Rückmeldung zu deiner Runde."],
-            ["Passend weiterlernen", "Wähle anschließend das Lernformat, das zu dir passt."],
+            ["Fragen beantworten", "Beantworte fünf abwechslungsreiche Deutschfragen."],
+            ["Erklärungen lesen", "Zu jeder Antwort bekommst du eine kurze Erklärung."],
+            ["Weiterüben", "Morgen kommen neue Fragen. Oder übe gleich im Quiz-Bot weiter."],
           ].map(([title, description], index) => (
             <li key={title} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <span
@@ -293,17 +292,25 @@ export function PublicHomeQuizTeaserSection({
         className={`${GLASS_CARD_CLASS} grid min-w-0 gap-5 p-4 sm:gap-6 sm:p-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,0.75fr)] lg:items-center`}
       >
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#FFD166]">Interaktiver Test</p>
+          <p className="text-sm font-semibold text-[#FFD166]">Tägliches Quiz</p>
           <h2 className="mt-2 max-w-2xl break-words text-2xl font-semibold leading-tight text-white sm:text-4xl">
-            Teste dein Deutsch in 5 Fragen.
+            5 Fragen pro Tag, von A1 bis B2.
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:leading-8">
             Jeden Tag warten fünf kurze Lernfragen auf dich – von A1 bis B2, mit direkter
             Auswertung und einer verständlichen Erklärung. Entdecke danach noch mehr Übungen im
             Bot und tägliche Lernimpulse in unserem Telegram-Kanal.
           </p>
+          <p className="mt-4 text-sm leading-6 text-slate-300">
+            <Link
+              href="/artikel/sprachniveaus-a0-c2"
+              className={`underline underline-offset-2 transition hover:text-white ${LINK_FOCUS_CLASS}`}
+            >
+              Wo stehst du gerade? Lies unseren Überblick: Sprachniveaus A0–C2
+            </Link>
+          </p>
           <div className="mt-6 grid gap-2 sm:grid-cols-3 sm:gap-3">
-            {["Sofortige Auswertung", "A1 bis B2", "5 neue Fragen pro Tag"].map((item) => (
+            {["Mit Erklärungen", "A1 bis B2", "5 neue Fragen pro Tag"].map((item) => (
               <div
                 key={item}
                 className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold leading-snug text-slate-200"

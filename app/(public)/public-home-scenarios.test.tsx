@@ -36,12 +36,12 @@ describe("public home scenarios", () => {
       <PublicHomeHero trackedTelegramBotUrl={trackedUrl} />,
     );
 
-    expect(html).toContain("Deutsch in 5 Fragen testen");
+    expect(html).toContain("Heutiges Quiz starten");
     expect(html).toContain('href="#quiz-teaser"');
     expect(html).toContain("Quiz-Bot auf Telegram öffnen");
     expect(html).toContain(`href="${trackedUrl}"`);
     expect(html).toContain("start=site_public_home");
-    expect(html).toContain("Du bekommst sofort ein Ergebnis");
+    expect(html).toContain("Jeden Tag 5 neue Fragen von A1 bis B2");
     expect(html).not.toContain("Wähle dein Lernformat.");
     expect(html).not.toMatch(/Pilotphase|Projekt im Aufbau|in Vorbereitung|unverbindlich/i);
   });
@@ -177,11 +177,13 @@ describe("public home scenarios", () => {
       <PublicHomeQuizTeaserSection trackedTelegramBotUrl={trackedUrl} />,
     );
 
-    expect(html).toContain("Interaktiver Test");
-    expect(html).toContain("Teste dein Deutsch in 5 Fragen.");
+    expect(html).toContain("Tägliches Quiz");
+    expect(html).toContain("5 Fragen pro Tag, von A1 bis B2.");
     expect(html).toContain("Heutige Runde starten");
     expect(html).toContain("A1 bis B2");
     expect(html).toContain("5 neue Fragen pro Tag");
+    expect(html).toContain("Wo stehst du gerade? Lies unseren Überblick: Sprachniveaus A0–C2");
+    expect(html).toContain('href="/artikel/sprachniveaus-a0-c2"');
   });
 
   it("provides distinct student and partner contact entry points", () => {

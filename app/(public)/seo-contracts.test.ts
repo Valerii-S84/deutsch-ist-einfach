@@ -276,13 +276,12 @@ describe("public SEO metadata contracts", () => {
 
     expect(source).toContain("Hetzner Online GmbH");
     expect(source).toContain("6 Monate nach der letzten Bearbeitung");
-    expect(source).toContain("Reichweitenmessung mit Umami");
+    expect(source).toContain("Statistik mit Umami");
     expect(source).toContain("§ 25 Abs. 2 Nr. 2 TDDDG");
     expect(source).toContain("Widerspruchsrecht nach Art. 21 DSGVO");
-    expect(source).toContain("kurzzeitig nur als Hashwert");
+    expect(source).toContain("28.02.2027");
     expect(source).not.toContain("Analytics-Einstellungen");
-    // No fixed log retention period is established by the current deployment.
-    expect(source).not.toContain("Server-, Proxy- und Sicherheitsprotokolle: 14 Tage");
+    expect(source).toContain("Server-Logfiles werden nach 14 Tagen automatisch gelöscht.");
 
     expect(source).not.toContain("nicht betriebsbereit");
     expect(source).not.toContain("TTDSG");
