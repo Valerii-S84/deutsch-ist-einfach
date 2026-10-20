@@ -93,5 +93,4 @@ jobs:
             NEXT_PUBLIC_TELEGRAM_CHANNEL_URL=https://t.me/doechkurse
             NEXT_PUBLIC_DEUTSCH_TRAINER_BOT_URL=https://t.me/Trainer1512_bot
             NEXT_PUBLIC_SITE_URL=https://deutschmit.de
-            NEXT_PUBLIC_CONTACT_EMAIL=info@deutschmit.de
             NEXT_PUBLIC_WEBSITE_ANALYTICS_MODE=${{ inputs.analytics_mode || 'off' }}

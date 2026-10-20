@@ -73,10 +73,6 @@ export default function ImpressumPage() {
             <p>44319 Dortmund</p>
             <p>Deutschland</p>
           </div>
-          <p className="mt-3">
-            Dieser Hinweis ist aufgenommen, weil auf der Website redaktionelle Artikelseiten
-            bereitgestellt werden.
-          </p>
         </article>
       </section>
         <PublicLegalFooter />

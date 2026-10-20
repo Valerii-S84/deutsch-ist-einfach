@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { contactAnalyticsContextSchema } from "../analytics/contract";
 
-export const STUDENT_AGE_GROUPS = ["unter_16", "16_25", "26_35", "36_50", "50_plus"] as const;
 export const STUDENT_LEVELS = ["A1", "A2", "B1", "B2", "C1_C2", "UNSICHER"] as const;
 export const STUDENT_GOALS = [
   "alltag",
@@ -22,7 +21,6 @@ export const PARTNER_STUDENT_COUNTS = ["bis_10", "10_50", "50_200", "200_plus", 
 export const PARTNER_OFFERINGS = ["teaching", "ads", "content", "product", "other"] as const;
 export const PARTNER_START_TIMELINES = ["asap", "month", "explore"] as const;
 
-export type StudentAgeGroup = (typeof STUDENT_AGE_GROUPS)[number];
 export type StudentLevel = (typeof STUDENT_LEVELS)[number];
 export type StudentGoal = (typeof STUDENT_GOALS)[number];
 export type StudentFormat = (typeof STUDENT_FORMATS)[number];
@@ -38,7 +36,6 @@ export const studentContactRequestSchema = z
   .object({
     type: z.literal("student"),
     name: z.string().min(1),
-    ageGroup: z.enum(STUDENT_AGE_GROUPS),
     level: z.enum(STUDENT_LEVELS),
     goals: z.array(z.enum(STUDENT_GOALS)).min(1),
     format: z.enum(STUDENT_FORMATS),

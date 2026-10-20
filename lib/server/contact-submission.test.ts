@@ -18,7 +18,6 @@ const saveContactRequestMock = vi.mocked(saveContactRequest);
 const studentPayload = {
   type: "student",
   name: "Anna Test",
-  ageGroup: "16_25",
   level: "B1",
   goals: ["alltag", "pruefung"],
   format: "individual",
@@ -71,7 +70,6 @@ describe("contact submission boundary", () => {
     expect(saveContactRequestMock).toHaveBeenCalledWith({
       type: "student",
       name: studentPayload.name,
-      ageGroup: studentPayload.ageGroup,
       level: studentPayload.level,
       goals: studentPayload.goals,
       format: studentPayload.format,

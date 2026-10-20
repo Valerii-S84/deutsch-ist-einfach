@@ -17,7 +17,6 @@ const CONTACT_REQUEST_MAX_BYTES = 32 * 1024;
 const studentPayload = {
   type: "student",
   name: "Anna Test",
-  ageGroup: "16_25",
   level: "B1",
   goals: ["alltag", "pruefung"],
   format: "individual",

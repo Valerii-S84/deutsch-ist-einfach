@@ -7,7 +7,6 @@ import { useContactAnalytics } from "./use-contact-analytics";
 import { submitContactRequest } from "@/lib/contact/contact-client";
 import {
   studentContactRequestSchema,
-  type StudentAgeGroup,
   type StudentBudget,
   type StudentFormat,
   type StudentFrequency,
@@ -31,7 +30,6 @@ import {
 
 type StudentFormState = {
   name: string;
-  ageGroup: string;
   level: string;
   goals: string[];
   format: string;
@@ -50,21 +48,12 @@ type ValidationResult = {
 
 const STUDENT_ERROR_ID = "student-form-error";
 const STUDENT_NAME_FIELD_ID = "student-name";
-const STUDENT_AGE_GROUP_FIELD_ID = "student-age-group";
 const STUDENT_LEVEL_FIELD_ID = "student-level";
 const STUDENT_GOALS_FIELD_ID = "student-goals";
 const STUDENT_FORMAT_FIELD_ID = "student-format";
 const STUDENT_TIME_FIELD_ID = "student-time";
 const STUDENT_FREQUENCY_FIELD_ID = "student-frequency";
 const STUDENT_CONTACT_FIELD_ID = "student-contact";
-
-const STUDENT_AGE_OPTIONS = [
-  { value: "unter_16", label: "Unter 16" },
-  { value: "16_25", label: "16-25" },
-  { value: "26_35", label: "26-35" },
-  { value: "36_50", label: "36-50" },
-  { value: "50_plus", label: "50+" },
-] satisfies Array<ChoiceOption & { value: StudentAgeGroup }>;
 
 const STUDENT_LEVEL_OPTIONS = [
   { value: "A1", label: "A1", description: "Nullniveau" },
@@ -120,7 +109,6 @@ const STUDENT_BUDGET_OPTIONS = [
 
 const INITIAL_STUDENT_STATE: StudentFormState = {
   name: "",
-  ageGroup: "",
   level: "",
   goals: [],
   format: "",
@@ -153,9 +141,6 @@ export function StudentWizard({ onClose }: WizardProps) {
     if (currentStep === 1) {
       if (!form.name.trim()) {
         return { message: "Bitte gib deinen Namen ein.", fieldId: STUDENT_NAME_FIELD_ID };
-      }
-      if (!form.ageGroup) {
-        return { message: "Bitte wähle eine Altersgruppe.", fieldId: STUDENT_AGE_GROUP_FIELD_ID };
       }
       if (!form.level) {
         return { message: "Bitte wähle dein aktuelles Deutschniveau.", fieldId: STUDENT_LEVEL_FIELD_ID };
@@ -227,7 +212,6 @@ export function StudentWizard({ onClose }: WizardProps) {
       const payload = studentContactRequestSchema.parse({
         type: "student",
         name: form.name.trim(),
-        ageGroup: form.ageGroup,
         level: form.level,
         goals: form.goals,
         format: form.format,
@@ -303,25 +287,6 @@ export function StudentWizard({ onClose }: WizardProps) {
               aria-describedby={errorFieldId === STUDENT_NAME_FIELD_ID ? STUDENT_ERROR_ID : undefined}
             />
           </div>
-
-          <fieldset
-            id={STUDENT_AGE_GROUP_FIELD_ID}
-            tabIndex={-1}
-            className="space-y-1"
-            aria-invalid={errorFieldId === STUDENT_AGE_GROUP_FIELD_ID}
-            aria-describedby={
-              errorFieldId === STUDENT_AGE_GROUP_FIELD_ID ? STUDENT_ERROR_ID : undefined
-            }
-          >
-            <legend className="text-sm font-medium text-slate-700">Wie alt bist du?</legend>
-            <div className="mt-2">
-              <ChoiceCards
-                options={STUDENT_AGE_OPTIONS}
-                value={form.ageGroup}
-                onChange={(value) => setForm((prev) => ({ ...prev, ageGroup: value }))}
-              />
-            </div>
-          </fieldset>
 
           <fieldset
             id={STUDENT_LEVEL_FIELD_ID}

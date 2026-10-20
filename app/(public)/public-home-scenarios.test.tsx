@@ -144,10 +144,9 @@ describe("public home scenarios", () => {
     const html = renderToStaticMarkup(<PublicHomeFurtherProjectsSection />);
 
     expect(html).toContain("Weitere Projekte");
-    expect(html).toContain("Worklog");
-    expect(html).toContain('href="/downloads/worklog/direct-hoofdrapport.apk"');
-    expect(html).toContain('download="worklog.apk"');
-    expect(html).toContain("Android-App herunterladen");
+    expect(html).not.toContain("Worklog");
+    expect(html).not.toContain(".apk");
+    expect(html).not.toContain("download=");
     expect(html).not.toContain('href="/contact"');
     expect(html).toContain("Bücher");
     expect(html).toContain('href="/books"');

@@ -70,7 +70,7 @@ describe("public site config", () => {
     delete process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 
     expect(getSiteUrl()).toBe("https://deutschmit.de");
-    expect(getPublicContactEmail()).toBe("info@deutschmit.de");
+    expect(getPublicContactEmail()).toBe("svalerii535@gmail.com");
   });
 
   it("trims and uses configured site URL and contact email", () => {

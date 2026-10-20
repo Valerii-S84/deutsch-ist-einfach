@@ -154,7 +154,6 @@ async function clickOptionByFieldsetIndexAndFlush(
 
 async function fillRequiredStudentFields(container: HTMLElement): Promise<void> {
   await setValueByIdAndFlush(container, "student-name", "Anna Test");
-  await clickOptionByFieldsetIndexAndFlush(container, "student-age-group", 0);
   await clickOptionByFieldsetIndexAndFlush(container, "student-level", 0);
   await clickOptionByFieldsetIndexAndFlush(container, "student-goals", 0);
   await clickByTextAndFlush(container, "Weiter");
@@ -174,6 +173,17 @@ afterEach(() => {
 });
 
 describe("student wizard a11y behavior", () => {
+  it("не показує поле віку у формі студента", () => {
+    const { container, cleanup } = renderInContainer(<StudentWizard onClose={vi.fn()} />);
+
+    try {
+      expect(container.querySelector("#student-age-group")).toBeNull();
+      expect(container.textContent).not.toMatch(/Wie alt bist du|Unter 16|Altersgruppe/);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("moves focus to first invalid field on first step validation failure", async () => {
     const { container, cleanup } = renderInContainer(<StudentWizard onClose={vi.fn()} />);
 
@@ -203,7 +213,6 @@ describe("lead analytics behavior", () => {
       expect(submitContactRequest).toHaveBeenCalledWith({
         type: "student",
         name: "Anna Test",
-        ageGroup: "unter_16",
         level: "A1",
         goals: ["alltag"],
         format: "individual",

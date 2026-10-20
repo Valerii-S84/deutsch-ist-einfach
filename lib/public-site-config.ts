@@ -2,7 +2,7 @@ const DEFAULT_TELEGRAM_BOT_URL = "https://t.me/Deine_Deutsch_Quiz_bot";
 const DEFAULT_TELEGRAM_CHANNEL_URL = "https://t.me/doechkurse";
 const DEFAULT_DEUTSCH_TRAINER_BOT_URL = "https://t.me/Trainer1512_bot";
 const DEFAULT_SITE_URL = "https://deutschmit.de";
-const DEFAULT_CONTACT_EMAIL = "info@deutschmit.de";
+export const PUBLIC_CONTACT_EMAIL = "svalerii535@gmail.com";
 
 export const PUBLIC_SITE_NAME = "Deutsch ist einfach!";
 export const PUBLIC_SITE_DESCRIPTION =
@@ -45,7 +45,7 @@ export function getSiteUrl(): string {
 export function getPublicContactEmail(): string {
   return (
     normalizePublicEnv(process.env.NEXT_PUBLIC_CONTACT_EMAIL) ??
-    DEFAULT_CONTACT_EMAIL
+    PUBLIC_CONTACT_EMAIL
   );
 }
 

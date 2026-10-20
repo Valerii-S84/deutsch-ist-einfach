@@ -58,7 +58,7 @@ existing `.env.local` files are excluded from the Docker build context.
 | `SITE_ADMIN_EMAIL`, `SITE_ADMIN_PASSWORD`, `SITE_ADMIN_SESSION_SECRET` | Required for local site admin login. Password: at least 12 characters; independently generated session secret: at least 32 bytes. No default credentials. |
 | `DATABASE_URL` | Server-only connection used by contact and Website Analytics. Compose supplies `postgresql://site_user:<password>@db:5432/deutschmit_site` when blank. Set explicitly for npm or a separately managed site database. URL-encode credentials in an explicit URL. |
 | `SITE_ADDRESS` | Caddy hostname, default `localhost`; no scheme or path. |
-| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_CONTACT_EMAIL` | Public canonical site URL and contact email. |
+| `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_CONTACT_EMAIL` | Public canonical site URL; contact email — optional override; default — PUBLIC_CONTACT_EMAIL у lib/public-site-config.ts. |
 | `NEXT_PUBLIC_TELEGRAM_BOT_URL`, `NEXT_PUBLIC_TELEGRAM_CHANNEL_URL`, `NEXT_PUBLIC_DEUTSCH_TRAINER_BOT_URL` | Existing public CTA links. Working defaults are supplied. |
 | `API_INTERNAL_URL`, `NEXT_PUBLIC_API_URL` | Optional Quiz Arena statistics; blank by default. Prefer runtime `API_INTERNAL_URL`. |
 | `QUIZ_BANK_API_BASE_URL`, `QUIZ_BANK_EDGE_API_KEY`, `QUIZ_BANK_CONSUMER_ID`, `QUIZ_BANK_CONSUMER_API_KEY` | Optional Quiz Bank teaser; set all four only when enabling it. |

@@ -9,7 +9,6 @@ import {
 const studentPayload = {
   type: "student",
   name: "Anna Test",
-  ageGroup: "unter_16",
   level: "A1",
   goals: ["alltag"],
   format: "individual",

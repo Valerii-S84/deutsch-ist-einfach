@@ -20,8 +20,6 @@ import {
   ORANGE_BUTTON_CLASS,
   SECONDARY_BUTTON_CLASS,
   WISSEN_ARTICLES,
-  WORKLOG_DOWNLOAD_PATH,
-  WORKLOG_LOGO_PATH,
 } from "./public-home-content";
 import { PublicHomeQuizTeaserWidget } from "./_components/quiz-teaser-widget";
 import { buildTrackedTelegramBotUrl, formatStatValue } from "./public-home-helpers";
@@ -429,19 +427,6 @@ export function PublicHomeProductsSection({
 
 export function PublicHomeFurtherProjectsSection() {
   const furtherProjects = [
-    {
-      title: "Worklog",
-      analyticsId: "worklog_apk",
-      category: "Produktivität · Android",
-      description:
-        "Eine eigenständige Android-App, um Aufgaben, Notizen und Arbeitsabläufe übersichtlich zu organisieren.",
-      href: WORKLOG_DOWNLOAD_PATH,
-      actionLabel: "Android-App herunterladen",
-      imageSrc: WORKLOG_LOGO_PATH,
-      badge: "Wo",
-      download: "worklog.apk",
-      external: false,
-    },
     {
       title: "Bücher",
       analyticsId: "books",

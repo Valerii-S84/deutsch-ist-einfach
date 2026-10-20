@@ -9,7 +9,6 @@ import { VISITOR_KEY } from "@/lib/analytics/identity";
 const studentPayload: StudentContactRequest = {
   type: "student",
   name: "Anna Test",
-  ageGroup: "16_25",
   level: "B1",
   goals: ["alltag", "pruefung"],
   format: "individual",
