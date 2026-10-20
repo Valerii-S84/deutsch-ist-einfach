@@ -47,7 +47,7 @@ build('frontend', ['docker', 'build', '--target', 'production', '-t', front,
     '--build-arg', 'NEXT_PUBLIC_TELEGRAM_BOT_URL=https://t.me/Deine_Deutsch_Quiz_bot',
     '--build-arg', 'NEXT_PUBLIC_TELEGRAM_CHANNEL_URL=https://t.me/doechkurse',
     '--build-arg', 'NEXT_PUBLIC_DEUTSCH_TRAINER_BOT_URL=https://t.me/Trainer1512_bot',
-    '--build-arg', 'NEXT_PUBLIC_CONTACT_EMAIL=info@deutschmit.de', '.'])
+    '--build-arg', 'NEXT_PUBLIC_CONTACT_EMAIL=svalerii535@gmail.com', '.'])
 build('analytics', ['docker', 'build', '-f', 'services/analytics/Dockerfile', '-t', analytics,
     '--label', 'org.opencontainers.image.revision=' + revision, '.'])
 front_id = run(['docker', 'image', 'inspect', '--format', '{{.Id}}', front])

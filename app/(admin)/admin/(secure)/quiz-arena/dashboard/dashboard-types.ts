@@ -70,34 +70,6 @@ export type OverviewData = {
   alerts: AlertItem[];
 };
 
-export type WebsiteAnalyticsTotals = {
-  page_views_total: number;
-  unique_visitors_total: number;
-  telegram_cta_clicks_total: number;
-};
-
-export type WebsiteAnalyticsDailyPoint = {
-  date: string;
-  unique_visitors: number;
-  page_views: number;
-  telegram_cta_clicks: number;
-};
-
-export type WebsiteAnalyticsTopPage = {
-  path: string;
-  page_views: number;
-  unique_visitors: number;
-  telegram_cta_clicks: number;
-};
-
-export type WebsiteAnalyticsOverviewData = {
-  generated_at: string;
-  days: number;
-  totals: WebsiteAnalyticsTotals;
-  daily_series: WebsiteAnalyticsDailyPoint[];
-  top_pages: WebsiteAnalyticsTopPage[];
-};
-
 export type FunnelChartItem = {
   step: string;
   step_label: string;

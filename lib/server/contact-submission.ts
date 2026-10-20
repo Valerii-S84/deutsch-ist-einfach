@@ -7,8 +7,6 @@ import {
   saveContactRequest,
   type PersistedContactPayload,
 } from "@/lib/server/contact-store";
-import type { ContactAnalyticsContext } from "@/lib/analytics/contract";
-import { sendContactSuccess } from "./contact-analytics";
 
 function withoutHoneypot(payload: ContactRequest): PersistedContactPayload {
   if (payload.type === "student") {
@@ -20,7 +18,6 @@ function withoutHoneypot(payload: ContactRequest): PersistedContactPayload {
   return persistedPayload;
 }
 
-export async function handleContactSubmission(payload: ContactRequest, analytics?: ContactAnalyticsContext): Promise<void> {
+export async function handleContactSubmission(payload: ContactRequest): Promise<void> {
   await saveContactRequest(withoutHoneypot(payload));
-  if (analytics) await sendContactSuccess(analytics);
 }

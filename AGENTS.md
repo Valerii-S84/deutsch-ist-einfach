@@ -1,84 +1,58 @@
+# Межі задачі
+
+- Змінювати лише файли, названі в задачі, або ті, без яких її не виконати; такий файл назвати у звіті.
+- Жодних попутніх рефакторингів, перейменувань, форматування чи «покращень».
+- Не створювати документів, звітів, нотаток і великих файлів, яких не просили.
+- Тимчасове тільки в `.verification/<task>/` (тека в ігнорі), після задачі прибрати; у `%TEMP%` нічого не лишати.
+- Якщо щось варто зробити за межами задачі, написати це у звіті як пропозицію, а не робити.
+- Без push, deploy, субагентів і рецензентів без окремого прямого дозволу власника.
+- Максимум 2 спроби «виправити → перевірити», далі стоп і чесний звіт (Done / Partial / Blocked).
+- Наприкінці звірити `git status` із задачею: кожен змінений чи новий файл має бути дозволений, а власне зайве повернути й указати у звіті.
+
 # Правила роботи в репозиторії
 
-Прочитай [точку входу](.agent/AGENTS.md) та застосуй її до задачі.
-Шляхи в наборі відраховуються від кореня репозиторію, якщо не зазначено інше.
-Враховуй також чинні інструкції середовища та правила директорій, яких стосується задача.
-Не скануй сторонні каталоги в пошуках правил.
+Цей файл — єдине джерело правил; збережені файли `.agent/` лише доповнюють його предметними деталями.
+Пряме доручення власника визначає задачу в межах системних і розробницьких інструкцій середовища.
+За конфлікту зупинити тільки залежну дію, назвати причину й продовжити незалежну дозволену роботу.
+Шляхи відраховуються від кореня репозиторію; не шукати правила у сторонніх каталогах.
+Відповіді, нові пояснення й документація — українською; факти, дозволи й результати не вигадувати.
+Наявні чужі зміни зберігати; нове доручення має перевагу над старим станом, завершене не відновлювати як нову задачу.
 
-## Критичні вимоги адміністративного контролю
+## Проєкт і перевірки
 
-Адміністративна статистика та збереження контролю власника над продуктами — критичні вимоги. Рефакторинг, відокремлення або перейменування не дозволяють видаляти адміністративні можливості, метрики чи доступ до них без прямого дозволу власника. Перенесення функції завершене лише після перевірки її доступності та правильності в новому місці. Подальші зміни повинні зберігати й перевіряти статистику всіх підключених продуктів.
+Стек: Next.js 15, React 18, TypeScript, TanStack Query, PostgreSQL; продукт deutsch-ist-einfach / deutschmit.de.
 
-Карта продуктів, аудит втрат, контракт інтеграції та критерії приймання: [адміністративний контроль](docs/admin-restoration.md). Для змін адмінки й статистики прочитай також [контракти метрик](docs/statistics-contract.md).
+- `npm run lint` — перевірка стилю.
+- `npm run typecheck` — перевірка типів.
+- `npm run test` — тести.
+- `npm run build` — збірка.
 
-TASK AND CONTEXT DISCIPLINE
+Перед звітом агент сам переглядає свій diff і запускає потрібні перевірки.
+Виконані перевірки та їхні межі вказувати чесно; успіх однієї не доводить успіх інших.
+Адміністративні можливості, метрики й доступ власника зберігати; перенесення перевіряти в новому місці.
+Для змін адмінки й статистики враховувати [контроль продуктів](docs/admin-restoration.md) і [контракти метрик](docs/statistics-contract.md).
 
-\- One task/thread must have one narrow objective. Do not expand a task with an independent objective. Finish the current task with a repository result and handoff, then use a new task/thread for the next independent objective.
+## Безпека й публікація
 
-\- Read required governing files once per task/thread and retain their applicable rules in working context. Do not reread an unchanged file in the same task unless an exact passage is required, the file may have changed, or context loss makes the prior read unavailable.
+Секрети, `.env*`, приватні ключі, дані авторизації та приватні журнали не читати й не виводити.
+Не обходити авторизацію або дозволи середовища; локальні зміни не дозволяють працювати з реальними даними.
+Deploy і зміни production виконувати тільки після явного «так» власника щодо конкретної дії.
+Push потребує окремого дозволу; коміт сам по собі не є дозволом на публікацію.
 
-\- Do not poll or call \`wait\` without a necessary already-running operation. Use an appropriate timeout in the original call, avoid short repeated waits, and stop waiting when the user asks for the requested action directly.
+## Пряме доручення коміту — пріоритетний виняток
 
-\- Do not rerun a successful test or check unless a relevant implementation or test artifact changed after that successful run, or the user explicitly requests the rerun. A commit alone is not a reason to rerun tests.
+Якщо власник каже «комітимо» або прямо доручає зробити коміт, виконати тільки `git add -- <вже погоджені файли>` та `git commit -m "<коротка точна назва>"`, у цьому порядку. Без повторного читання, status, diff, тестів чи інших команд до чи після. Якщо перелік невідомий — уточнити його без команд. Не заявляти чисте дерево без доказу. Виняток не дозволяє нових правок, push, PR, merge або production.
 
-\- Batch independent read-only shell checks into one orchestrated tool call. Minimize model/tool round trips, especially when the conversation context is large.
+## Бюджет роботи
 
-\- Do not run \`git status\`, diff checks, tests, validation, or other diagnostics "just in case". Run a check only when it is directly required to scope an authorized write, diagnose an observed problem, satisfy an acceptance gate, or produce evidence explicitly requested by the user.
+1. Коротко визначити мету й достатній результат.
+2. Читати лише потрібні файли; незмінені матеріали повторно не завантажувати.
+3. Не запускати зайвих перевірок і не повторювати успішні без зміни відповідних файлів.
+4. Дотримуватися ліміту спроб із блоку «Межі задачі»; після нього зупинитися й повідомити результат.
+5. Якщо власник питає в чаті, одразу відповісти, що змінено і що лишилось.
 
-\- Use \`/status\` at task boundaries and before an expensive multi-step task when the interface provides it.
+## Стан і звіт
 
-EXECUTION PLANNING PROTOCOL — REQUIRED BEFORE TOOL USE
-
-\- Before the first tool call, state a short execution plan containing: the one narrow objective, explicit non-goals, governing authority, files expected to change, the exact verification command or evidence gate, and the maximum planned model passes.
-
-\- Define completion in observable terms before starting, for example an exact test count plus \`OK\`, a named artifact plus a validation result, or a successful commit of an explicit file whitelist. Do not use open-ended goals such as "improve", "investigate everything", or "make tests better" without a bounded gate.
-
-\- Estimate \`current context tokens × planned model passes\` before tooling. If the estimate does not fit the active budget, reduce reads and passes, or stop with \`BUDGET LIMIT\` before spending the budget.
-
-\- Reuse established repository state and exact user handoffs. Do not rediscover architecture, recompute known evidence, or reread unchanged governing files unless the current decision requires an exact passage, the files may have changed, or context loss removed the prior read.
-
-\- Read only the minimum authoritative material needed to choose the implementation. Prefer targeted sections, parsed projections, names, counts, hashes, and bounded excerpts over full large files, minified workflow JSON, generated HTML, or repository-wide discovery.
-
-\- Batch independent reads and predictable dependent mechanical steps into the fewest safe orchestrated tool calls. Set a sufficient timeout and bounded output on the original call so avoidable polling, truncation, and transport retries do not consume model passes.
-
-\- After the last relevant change, run one verification phase matched to the completion gate. Do not run a full suite when a targeted lane is the approved gate, and do not rerun successful checks when no relevant artifact changed.
-
-\- A failed verification permits one retry only after identifying the concrete cause. Change only the causal scope, explain why the correction addresses that cause, and rerun the same gate once. Random alternative patches or repeated exploratory runs are prohibited.
-
-BUDGET DISCIPLINE — HARD RULE
-
-\- Treat context tokens, model passes, tool calls, execution time, and external calls as a finite project budget. Use the least expensive safe path that is sufficient to complete the user's exact request.
-
-\- Every analysis step, repository search, file read, command, experiment, test, audit, or tool call must unlock a concrete required decision, implementation action, or requested piece of evidence. If it does not, it is prohibited.
-
-\- Do not perform speculative analysis, broad research, exploratory experiments, alternative implementations, extra audits, or "while we are here" investigations unless the user explicitly requests them or they are strictly necessary to unblock the active task.
-
-\- Do not collect more evidence after the requested result is already established. Stop immediately when the narrow task is complete and return the result.
-
-\- Prefer one targeted read over repository-wide discovery, one deterministic check over repeated sampling, and one orchestrated tool call over multiple model/tool round trips.
-
-\- Do not spend budget optimizing, explaining, testing, or documenting work beyond the requested acceptance boundary. When additional work may be useful but is not required, report it as a possible next task without executing it.
-
-\- If a task can be completed safely from already established repository state, use that state. Do not recreate evidence or repeat analysis merely to increase confidence.
-
-\- When \`/status\` shows high context use, do not begin optional work.
-
-\- A narrow task is limited to at most five model passes, including passes caused by tool results, retries, waits, or intermediate responses. A sixth pass requires explicit user approval after reporting why it is necessary and what it will cost.
-
-\- Before tool use, estimate \`current context tokens × planned model passes\`. If the estimate exceeds the task budget, do not start the operation in the current thread. For an independent task, the default hard ceiling is 300,000 total tokens unless the user explicitly sets another budget.
-
-\- Use \`/status\` before starting an independent tool-using task. If the 300,000-token ceiling cannot be met in the current context, require a new thread. Do not spend the budget first and report the overrun afterward.
-
-\- When predictable steps depend on one another, execute them inside one orchestrated tool call where safely possible. Do not return control to the model between status, whitelist validation, staging, commit, or similar mechanical steps unless a human decision is actually required.
-
-\- Limit tool output to the smallest useful evidence, normally no more than 2,000–3,000 tokens or 100–200 lines. Never dump a full minified workflow JSON, full HTML report, large embedded provenance/semantic JSON, or full diff of a large generated file when targeted fields, counts, hashes, or a bounded excerpt answer the task.
-
-\- Allow at most one retry, and only after identifying a concrete failure cause and correcting it. A second retry requires explicit user approval. Polling attempts count as retries/model passes.
-
-\- After the last relevant change, allow one verification phase only. Batch all required independent checks into that phase. Do not separately repeat tests, diff checks, status checks, or validations.
-
-\- Define the task's exact completion condition before the first tool call. Once that condition is met, stop. Post-completion status, verification, explanation, cleanup, optimization, or documentation is prohibited unless explicitly requested or required by an approved acceptance gate.
-
-\- For a request whose complete objective is a Git commit: verify only the exact file whitelist needed to prevent unrelated inclusion; do not rerun already-successful tests when no relevant file changed afterward; do not read a full diff without a concrete need; request known-required Git escalation on the first attempt; and treat successful commit output as sufficient evidence without a post-commit status check.
-
-\- If the task cannot be completed within the approved budget, stop before exceeding it and report exactly: \`BUDGET LIMIT\`, the additional model passes required, the reason, and the cheapest safe alternative. Continue only after explicit user approval.
+Done — погоджене завершено й потрібні перевірки пройдено; Partial — є незавершене; Blocked — є конкретна перешкода.
+`HANDOFF.md` — необов'язковий для читання короткий стан поточної задачі до 30 рядків: задача, дозволені файли, статус, зроблене й залишок.
+Оновлювати його лише наприкінці задачі або на прохання власника; звіт у чаті містить зміни, перевірки та відкриті питання.

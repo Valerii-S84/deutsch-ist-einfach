@@ -12,6 +12,7 @@ import {
   getSiteUrl,
 } from "@/lib/public-site-config";
 import { Providers } from "./providers";
+import { UmamiScript } from "./umami-script";
 
 const siteUrl = getSiteUrl();
 
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="de">
       <body>
         <Providers>{children}</Providers>
+        <UmamiScript />
       </body>
     </html>
   );

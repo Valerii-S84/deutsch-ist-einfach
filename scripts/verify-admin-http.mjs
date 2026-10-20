@@ -54,7 +54,7 @@ try {
   check(backendCalls, 0);
   const login = await call("/api/admin/login", "POST", { email: env.SITE_ADMIN_EMAIL, password: env.SITE_ADMIN_PASSWORD });
   check(login.status, 200); cookieUpdate(login); check(backendCalls, 0);
-  for (const path of ["/admin/quiz-arena/dashboard", "/admin/deutschmit", "/admin/deutsch-trainer", "/admin/shorts-blocker-kids", "/admin/deutschmit/requests"]) check((await call(path)).status, 200);
+  for (const path of ["/admin/quiz-arena/dashboard", "/admin/deutschmit", "/admin/deutsch-trainer", "/admin/deutschmit/requests"]) check((await call(path)).status, 200);
   const botLogin = await call("/api/admin/quiz-arena/auth/login", "POST", { email: "bot@example.test", password: "synthetic-bot-password" });
   check(botLogin.status, 200); cookieUpdate(botLogin);
   const mutation = await call("/api/admin/quiz-arena/promo/9223372036854775807/toggle", "PATCH");
@@ -68,7 +68,6 @@ try {
   check((await call("/api/admin/quiz-arena/users")).status, 503);
   check((await call("/")).status, 200);
   check((await call("/admin/deutsch-trainer")).status, 200);
-  check((await call("/api/admin/website-analytics/overview")).status, 503); // no site DB configured, not a bot failure
   check((await call("/api/admin/contact-requests")).status, 503);
   console.log(`PASS: ${checks} isolated HTTP controls; site login, product routes, bigint mutation/readback, CSRF, bot outage; no real data`);
 } finally {

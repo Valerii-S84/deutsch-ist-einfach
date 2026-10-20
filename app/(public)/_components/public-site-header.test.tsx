@@ -6,10 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PublicSiteHeader } from "./public-site-header";
 
-vi.mock("@/app/analytics-provider", () => ({
-  usePublicAnalytics: () => ({ trackEvent: vi.fn() }),
-}));
-
 function renderInContainer(ui: ReactElement) {
   const container = document.createElement("div");
   document.body.append(container);

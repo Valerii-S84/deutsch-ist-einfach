@@ -3,7 +3,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
-import { usePublicAnalytics } from "@/app/analytics-provider";
 import type { ActiveWizard } from "./public-home-types";
 
 const ContactWizardModal = dynamic(
@@ -23,7 +22,6 @@ type PublicHomeClientProps = {
 
 export default function PublicHomeClient({ children }: PublicHomeClientProps) {
   const [activeWizard, setActiveWizard] = useState<ActiveWizard>(null);
-  const { trackEvent } = usePublicAnalytics();
 
   useEffect(() => {
     const root = document.getElementById("public-home-root");
@@ -32,22 +30,6 @@ export default function PublicHomeClient({ children }: PublicHomeClientProps) {
     }
 
     const onRootClick = (event: MouseEvent) => {
-      const analyticsTarget = (event.target as HTMLElement | null)?.closest?.(
-        '[data-analytics-event="hero_cta_click"], [data-analytics-event="channel_cta_click"]',
-      );
-
-      if (analyticsTarget) {
-        const eventName = analyticsTarget.getAttribute("data-analytics-event");
-
-        if (eventName === "hero_cta_click" || eventName === "channel_cta_click") {
-          trackEvent(eventName, {
-            section: analyticsTarget.getAttribute("data-analytics-section") || undefined,
-            cta: analyticsTarget.getAttribute("data-analytics-cta") || undefined,
-
-          });
-        }
-      }
-
       const wizardButton = (event.target as HTMLElement | null)?.closest?.(
         '[data-wizard="student"], [data-wizard="partner"]',
       );
@@ -63,7 +45,7 @@ export default function PublicHomeClient({ children }: PublicHomeClientProps) {
 
     root.addEventListener("click", onRootClick);
     return () => root.removeEventListener("click", onRootClick);
-  }, [trackEvent]);
+  }, []);
 
   return (
     <>

@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "invalid_json" }, 400);
   }
 
-  const { validation, analytics } = parseContactTransport(untrustedPayload);
+  const { validation } = parseContactTransport(untrustedPayload);
   if (!validation.success) {
     return jsonResponse({ error: "invalid_payload" }, 422);
   }
@@ -136,8 +136,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (analytics) await handleContactSubmission(payload, analytics);
-    else await handleContactSubmission(payload);
+    await handleContactSubmission(payload);
   } catch {
     return jsonResponse({ error: "contact_submission_failed" }, 500);
   }

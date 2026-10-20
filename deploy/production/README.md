@@ -41,6 +41,36 @@ Run as root on the named VPS:
     /opt/quiz-arena-site/current/deploy/production/operate.sh verify
     /opt/quiz-arena-site/current/deploy/production/operate.sh backup
 
+## Адресне оновлення фронтенду
+
+Перед оновленням перевірити точний коміт чистого релізу, новий і поточний
+незмінні образи, чинний `release.env`, резервні копії обох баз, можливість повернення
+попереднього образу та погодження власника. У `release.env` змінювати тільки
+`FRONTEND_IMAGE`; `ANALYTICS_IMAGE` залишити без змін. Приватні файли не виводити.
+Якщо для релізу потрібні міграції або відновлення баз не доведено, зупинитися
+до окремого плану для даних.
+
+Після цих перевірок і погодження адресно відтворити тільки сайт:
+
+    /opt/quiz-arena-site/current/deploy/production/operate.sh compose up -d --no-deps --no-build --wait --wait-timeout 120 frontend
+
+Перевірити `quiz-arena-site-frontend-1` як `healthy` і публічну сторінку
+`https://deutschmit.de/`. Маршрут `https://deutschmit.de/health` перевіряє Quiz
+API, тому не є перевіркою здоров'я фронтенду. Окремо перевірити публічний
+`https://deutschmit.de/admin/login`; вхід власника й захищену дію перевіряє
+сам власник без передачі облікових даних агенту. Стару адмінку Quiz перевірити
+окремо на `https://deutchquizarena.de/admin/login`. Порівняти ідентифікатори,
+образи, стани, перезапуски та монтування всіх інших 16 контейнерів із початковим
+станом, перевірити сім активних таймерів і публічні маршрути сусідів.
+
+Для повернення змінити в чинному `release.env` тільки `FRONTEND_IMAGE` на
+збережений попередній ідентифікатор образу й підтвердити незмінність
+`ANALYTICS_IMAGE` та решти налаштувань. Повторити ту саму команду лише для
+`frontend` і ті самі
+перевірки. `stop-tracking` є окремою дією для збору аналітики, а не поверненням
+звичайного оновлення фронтенду. Бази, `legacy-frontend`, `analytics` і Caddy
+цією процедурою не відтворювати.
+
 analytics-retention runs the existing 90-day cleanup daily.
 deutschmit-db-backup.timer runs daily at 03:30 UTC with up to five minutes jitter,
 including missed runs. Both new databases are backed up to this VPS under

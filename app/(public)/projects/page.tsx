@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { analyticsAttributes } from "@/lib/analytics/elements";
+import { trackAttributes } from "@/lib/umami";
 import type { Metadata } from "next";
 
 import { PublicLegalFooter } from "../_components/public-legal-footer";
@@ -123,7 +123,7 @@ export default function ProjectsPage() {
                 return offer.external ? (
                   <a
                     key={offer.name}
-                    href={offer.href} {...analyticsAttributes(offer.analyticsId, "projects")}
+                    href={offer.href} {...(offer.analyticsId === "telegram_bot" ? trackAttributes("telegram-click", { cta: "telegram_bot", placement: "projects" }) : {})}
                     target="_blank"
                     rel="noreferrer"
                     className={className}
@@ -131,7 +131,7 @@ export default function ProjectsPage() {
                     {cardContent}
                   </a>
                 ) : (
-                  <Link key={offer.name} href={offer.href} {...analyticsAttributes(offer.analyticsId, "projects")} className={className}>
+                  <Link key={offer.name} href={offer.href} className={className}>
                     {cardContent}
                   </Link>
                 );

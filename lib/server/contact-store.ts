@@ -7,6 +7,8 @@ import type {
   StudentContactRequest,
 } from "@/lib/contact/contact-schema";
 
+export const CONTACT_REQUEST_RETENTION_MONTHS = 6;
+
 export const CONTACT_REQUEST_STATUSES = ["NEW", "IN_PROGRESS", "DONE", "SPAM"] as const;
 
 export type ContactRequestStatus = (typeof CONTACT_REQUEST_STATUSES)[number];
@@ -156,11 +158,23 @@ const persistContactRequest = createContactStore(postgresContactRequestWriter);
 export async function saveContactRequest(
   payload: PersistedContactPayload,
 ): Promise<ContactRequestRecord> {
-  return persistContactRequest(payload);
+  const record = await persistContactRequest(payload);
+  await purgeExpiredContactRequests();
+  return record;
+}
+
+export async function purgeExpiredContactRequests(): Promise<void> {
+  try {
+    const sql = getDatabaseClient();
+    await sql`DELETE FROM contact_requests WHERE updated_at < now() - make_interval(months => ${CONTACT_REQUEST_RETENTION_MONTHS})`;
+  } catch {
+    console.error("CONTACT_RETENTION_FAILED");
+  }
 }
 
 // Site-owned administrative access; never reads Quiz Arena storage.
 export async function readSiteContactRequests(page: number, testsOnly = false) {
+  await purgeExpiredContactRequests();
   const sql = getDatabaseClient();
   return sql.begin("isolation level repeatable read read only", async transaction => {
     const totals = await transaction`SELECT count(*)::int AS total FROM contact_requests WHERE is_test = ${testsOnly}`;

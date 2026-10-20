@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   getPublicContactEmail,
+  PUBLIC_YOUTUBE_CHANNEL_URL,
   TELEGRAM_BOT_START_PAYLOAD,
   getDeutschTrainerBotUrl,
   getTelegramBotUrl,
@@ -41,6 +42,10 @@ afterEach(() => {
 });
 
 describe("public site config", () => {
+  it("keeps the YouTube channel URL stable", () => {
+    expect(PUBLIC_YOUTUBE_CHANNEL_URL).toBe("https://www.youtube.com/@KommmitaufDeutsch");
+  });
+
   it("uses the default Telegram URLs when env values are unset", () => {
     delete process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
     delete process.env.NEXT_PUBLIC_TELEGRAM_CHANNEL_URL;
@@ -70,7 +75,7 @@ describe("public site config", () => {
     delete process.env.NEXT_PUBLIC_CONTACT_EMAIL;
 
     expect(getSiteUrl()).toBe("https://deutschmit.de");
-    expect(getPublicContactEmail()).toBe("info@deutschmit.de");
+    expect(getPublicContactEmail()).toBe("svalerii535@gmail.com");
   });
 
   it("trims and uses configured site URL and contact email", () => {

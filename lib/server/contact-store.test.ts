@@ -1,18 +1,27 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ContactStoreError,
+  CONTACT_REQUEST_RETENTION_MONTHS,
   createContactStore,
+  purgeExpiredContactRequests,
+  readSiteContactRequests,
+  saveContactRequest,
   type ContactRequestRecord,
   type ContactRequestWriter,
   type PersistedPartnerContactPayload,
   type PersistedStudentContactPayload,
 } from "./contact-store";
 
+const database = vi.hoisted(() => ({
+  sql: Object.assign(vi.fn(), { json: vi.fn((payload: unknown) => payload), begin: vi.fn() }),
+}));
+
+vi.mock("postgres", () => ({ default: vi.fn(() => database.sql) }));
+
 const studentPayload: PersistedStudentContactPayload = {
   type: "student",
   name: "Anna Test",
-  ageGroup: "16_25",
   level: "B1",
   goals: ["alltag", "pruefung"],
   format: "individual",
@@ -137,5 +146,86 @@ describe("contact store", () => {
     const save = createContactStore(writer);
 
     await expect(save(studentPayload)).rejects.toBeInstanceOf(ContactStoreError);
+  });
+});
+
+describe("строк зберігання контактних заявок", () => {
+  beforeEach(() => {
+    database.sql.mockReset();
+    database.sql.json.mockClear();
+    database.sql.begin.mockReset();
+    vi.stubEnv("DATABASE_URL", "postgres://synthetic.invalid/contact-retention-test");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("видаляє всі статуси й тестові заявки за updated_at через параметр шести місяців", async () => {
+    database.sql.mockResolvedValue([]);
+
+    await purgeExpiredContactRequests();
+
+    expect(CONTACT_REQUEST_RETENTION_MONTHS).toBe(6);
+    expect(database.sql).toHaveBeenCalledOnce();
+    const [strings, ...parameters] = database.sql.mock.calls[0];
+    expect(strings.join("?")).toBe(
+      "DELETE FROM contact_requests WHERE updated_at < now() - make_interval(months => ?)",
+    );
+    expect(parameters).toEqual([6]);
+  });
+
+  it("очищує заявки після підтвердженого INSERT", async () => {
+    database.sql.mockImplementationOnce(async (_strings, id: string) => [{ id }]);
+    database.sql.mockResolvedValueOnce([]);
+
+    const record = await saveContactRequest(studentPayload);
+
+    expect(record.payload).toEqual(studentPayload);
+    expect(database.sql).toHaveBeenCalledTimes(2);
+    expect(database.sql.mock.calls[0][0].join("?")).toContain("INSERT INTO contact_requests");
+    expect(database.sql.mock.calls[1][0].join("?")).toContain("DELETE FROM contact_requests");
+  });
+
+  it("очищує заявки до початку read-only транзакції", async () => {
+    database.sql.mockResolvedValue([]);
+    const transaction = vi.fn().mockResolvedValueOnce([{ total: 1 }]).mockResolvedValueOnce([{ id: "synthetic" }]);
+    database.sql.begin.mockImplementation(async (_options, read) => read(transaction));
+
+    const result = await readSiteContactRequests(1, true);
+
+    expect(result).toEqual({ items: [{ id: "synthetic" }], total: 1, page: 1, pages: 1 });
+    expect(database.sql).toHaveBeenCalledOnce();
+    expect(database.sql.begin).toHaveBeenCalledWith("isolation level repeatable read read only", expect.any(Function));
+    expect(database.sql.mock.invocationCallOrder[0]).toBeLessThan(database.sql.begin.mock.invocationCallOrder[0]);
+    expect(transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("не запускає очищення після невдалого INSERT", async () => {
+    database.sql.mockRejectedValueOnce(new Error("synthetic insert failure"));
+
+    await expect(saveContactRequest(studentPayload)).rejects.toBeInstanceOf(ContactStoreError);
+
+    expect(database.sql).toHaveBeenCalledOnce();
+  });
+
+  it.each(["save", "read"])("помилка очищення не ламає %s і не потрапляє до журналу", async operation => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failure = new Error("synthetic private database details");
+    if (operation === "save") {
+      database.sql.mockImplementationOnce(async (_strings, id: string) => [{ id }]);
+      database.sql.mockRejectedValueOnce(failure);
+
+      await expect(saveContactRequest(studentPayload)).resolves.toMatchObject({ payload: studentPayload });
+    } else {
+      database.sql.mockRejectedValueOnce(failure);
+      const transaction = vi.fn().mockResolvedValueOnce([{ total: 0 }]).mockResolvedValueOnce([]);
+      database.sql.begin.mockImplementation(async (_options, read) => read(transaction));
+
+      await expect(readSiteContactRequests(1)).resolves.toEqual({ items: [], total: 0, page: 1, pages: 1 });
+    }
+
+    expect(log).toHaveBeenCalledExactlyOnceWith("CONTACT_RETENTION_FAILED");
   });
 });

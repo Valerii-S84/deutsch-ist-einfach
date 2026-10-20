@@ -7,7 +7,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   PublicHomeContactSection,
   PublicHomeFooter,
-  PublicHomeFurtherProjectsSection,
   PublicHomeHero,
   PublicHomeKnowledgeSection,
   PublicHomeProductsSection,
@@ -37,12 +36,12 @@ describe("public home scenarios", () => {
       <PublicHomeHero trackedTelegramBotUrl={trackedUrl} />,
     );
 
-    expect(html).toContain("Deutsch in 5 Fragen testen");
+    expect(html).toContain("Heutiges Quiz starten");
     expect(html).toContain('href="#quiz-teaser"');
     expect(html).toContain("Quiz-Bot auf Telegram öffnen");
     expect(html).toContain(`href="${trackedUrl}"`);
     expect(html).toContain("start=site_public_home");
-    expect(html).toContain("Du bekommst sofort ein Ergebnis");
+    expect(html).toContain("Jeden Tag 5 neue Fragen von A1 bis B2");
     expect(html).not.toContain("Wähle dein Lernformat.");
     expect(html).not.toMatch(/Pilotphase|Projekt im Aufbau|in Vorbereitung|unverbindlich/i);
   });
@@ -55,10 +54,11 @@ describe("public home scenarios", () => {
       <PublicHomeHero trackedTelegramBotUrl={trackedUrl} />,
     );
 
-    expect(html).toContain("data-analytics-event=\"hero_cta_click\"");
-    expect(html).toContain("data-analytics-section=\"hero\"");
-    expect(html).toContain("data-analytics-cta=\"telegram_bot\"");
-    expect(html).toContain("data-analytics-cta=\"quiz_teaser_anchor\"");
+    expect(html).toContain("data-track=\"hero-cta\"");
+    expect(html).toContain("data-track=\"telegram-click\"");
+    expect(html).toContain("data-track-cta=\"telegram_bot\"");
+    expect(html).toContain("data-track-cta=\"quiz_teaser_anchor\"");
+    expect(renderToStaticMarkup(<PublicHomeFooter />)).not.toContain("Analytics-Einstellungen");
   });
 
   it("includes section-level navigation in header with in-page targets", () => {
@@ -122,7 +122,7 @@ describe("public home scenarios", () => {
     expect(html.match(/id="projects"/g)).toHaveLength(1);
   });
 
-  it("keeps three German-learning offers in one consistent product grid", () => {
+  it("keeps five German-learning offers in one consistent product grid", () => {
     const trackedUrl = buildTrackedTelegramBotUrl(
       getTelegramBotUrl(),
       TELEGRAM_BOT_START_PAYLOAD,
@@ -135,27 +135,26 @@ describe("public home scenarios", () => {
     expect(html).toContain("Deutsch ist einfach!");
     expect(html).toContain("Deutsch Trainer Bot");
     expect(html).not.toContain("Worklog");
-    expect(html.match(/<article/g)).toHaveLength(3);
+    expect(html.match(/<article/g)).toHaveLength(5);
     expect(html).toContain('sizes="(min-width: 1024px) 352px');
-    expect(html.match(/alt=""/g)).toHaveLength(3);
-  });
-
-  it("shows non-learning projects separately with honest link behavior", () => {
-    const html = renderToStaticMarkup(<PublicHomeFurtherProjectsSection />);
-
-    expect(html).toContain("Weitere Projekte");
-    expect(html).toContain("Worklog");
-    expect(html).toContain('href="/downloads/worklog/direct-hoofdrapport.apk"');
-    expect(html).toContain('download="worklog.apk"');
-    expect(html).toContain("Android-App herunterladen");
-    expect(html).not.toContain('href="/contact"');
-    expect(html).toContain("Bücher");
-    expect(html).toContain('href="/books"');
-    expect(html).toContain("Deutsch für Elektriker als Printausgabe und Kindle-eBook");
-    expect(html).toContain("Shorts Blocker Kids");
-    expect(html).toContain('href="https://www.shortsblockerkids.de/"');
-    expect(html).toContain('target="_blank"');
-    expect(html).toContain('rel="noreferrer"');
+    expect(html.match(/alt=""/g)).toHaveLength(5);
+    expect(html).toContain("Komm mit auf Deutsch");
+    expect(html).toContain('href="https://www.youtube.com/@KommmitaufDeutsch"');
+    expect(html).toContain('data-track="youtube-click"');
+    expect(html).toContain('data-track-cta="youtube_channel"');
+    expect(html).toContain('data-track-placement="product_card"');
+    expect(html).toContain('aria-label="Kanal ansehen: Komm mit auf Deutsch"');
+    expect(html).toContain("Quiz, tägliche Lernimpulse, persönliches Training, Lernvideos und ein Fachbuch.");
+    expect(html).toContain("Deutsch für Elektriker");
+    expect(html).toContain('href="https://www.amazon.de/dp/B0HBLTQ9SZ"');
+    expect(html).toContain('data-track="amazon-click"');
+    expect(html).toContain('data-track-cta="book_print"');
+    expect(html).toContain('aria-label="Bei Amazon ansehen: Deutsch für Elektriker"');
+    expect(html).toContain("lg:grid-cols-3");
+    for (const label of ["Telegram Quiz Bot", "Telegram-Kanal", "Persönliches Training", "YouTube-Kanal"]) {
+      expect(html).not.toContain(">" + label + "<");
+    }
+    expect(html).not.toContain("<iframe");
   });
 
   it("labels fresh and unavailable statistics without inventing a timestamp", () => {
@@ -178,11 +177,13 @@ describe("public home scenarios", () => {
       <PublicHomeQuizTeaserSection trackedTelegramBotUrl={trackedUrl} />,
     );
 
-    expect(html).toContain("Interaktiver Test");
-    expect(html).toContain("Teste dein Deutsch in 5 Fragen.");
+    expect(html).toContain("Tägliches Quiz");
+    expect(html).toContain("5 Fragen pro Tag, von A1 bis B2.");
     expect(html).toContain("Heutige Runde starten");
     expect(html).toContain("A1 bis B2");
     expect(html).toContain("5 neue Fragen pro Tag");
+    expect(html).toContain("Wo stehst du gerade? Lies unseren Überblick: Sprachniveaus A0–C2");
+    expect(html).toContain('href="/artikel/sprachniveaus-a0-c2"');
   });
 
   it("provides distinct student and partner contact entry points", () => {

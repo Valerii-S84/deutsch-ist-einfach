@@ -7,13 +7,13 @@ import { PUBLIC_SITE_NAME, getPublicContactEmail } from "@/lib/public-site-confi
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung",
-  description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und Website-Analytics.`,
+  description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und Reichweitenmessung mit Umami.`,
   alternates: {
     canonical: "/privacy",
   },
   openGraph: {
     title: `Datenschutzerklärung | ${PUBLIC_SITE_NAME}`,
-    description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und Website-Analytics.`,
+    description: `Datenschutzerklärung für die öffentliche Website ${PUBLIC_SITE_NAME} mit Angaben zu Hosting, Kontaktanfragen, Cookies und Reichweitenmessung mit Umami.`,
     url: "/privacy",
   },
 };
@@ -27,197 +27,139 @@ export default function PrivacyPage() {
       <main className="mx-auto min-h-screen max-w-3xl px-6 py-14">
       <h1 className="text-3xl font-semibold text-slate-900">Datenschutzerklärung</h1>
       <p className="mt-4 text-sm leading-6 text-slate-700">
-        Stand: 13. September 2026. Diese Datenschutzerklärung gilt für die öffentliche Website{" "}
-        {PUBLIC_SITE_NAME} mit ihren Informationsseiten, Artikelseiten, dem Kontaktbereich und dem
-        öffentlichen Quiz-Teaser.
+        Stand: Oktober 2026
       </p>
 
       <section className="mt-8 space-y-4 text-sm leading-6 text-slate-700">
         <article className="rounded-xl border border-white/70 bg-white/80 p-5">
           <h2 className="text-base font-semibold text-slate-900">1. Verantwortlicher</h2>
-          <div className="mt-3">
-            <p>Verantwortlich im Sinne von Art. 4 Nr. 7 DSGVO ist:</p>
-            <p className="mt-3 font-medium text-slate-900">Valerii Serputko</p>
-            <p>Gudrunstraße 134</p>
-            <p>44319 Dortmund</p>
-            <p>Deutschland</p>
-            <p className="mt-3">
-              Weitere Kontaktangaben findest du im{" "}
-              <Link className="underline underline-offset-2" href="/impressum">
-                Impressum
-              </Link>{" "}
-              und auf der{" "}
-              <Link className="underline underline-offset-2" href="/contact">
-                Kontaktseite
-              </Link>
-              .
-            </p>
-            <p className="mt-3">
-              Du erreichst uns per E-Mail unter{" "}
-              <a
-                className="font-medium text-slate-900 underline underline-offset-2"
-                href={`mailto:${contactEmail}`}
-              >
-                {contactEmail}
-              </a>
-              .
-            </p>
-          </div>
-        </article>
-
-        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">
-            2. Hosting und technische Server-Protokolle
-          </h2>
           <p className="mt-3">
-            Die Website wird auf einer eigenbetriebenen Infrastruktur bei Hetzner Online GmbH in
-            Deutschland gehostet.
+            Valerii Serputko, Gudrunstraße 134, 44319 Dortmund, Deutschland
           </p>
           <p className="mt-3">
-            Beim Aufruf der Website werden technisch erforderliche Server-Protokolle verarbeitet.
-            Dazu gehören insbesondere IP-Adresse, Datum und Uhrzeit, aufgerufene Seite, Referrer,
-            Browser-Informationen sowie sicherheitsrelevante Statusdaten. Diese Verarbeitung ist
-            erforderlich, um die Website sicher und stabil bereitzustellen.
+            E-Mail:{" "}<a className="font-medium text-slate-900 underline underline-offset-2" href={`mailto:${contactEmail}`}>{contactEmail}</a>
           </p>
           <p className="mt-3">
-            Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt in
-            der sicheren Bereitstellung, Fehleranalyse und Missbrauchsabwehr.
+            Weitere Angaben im{" "}<Link className="underline underline-offset-2" href="/impressum">Impressum</Link>{" "}(/impressum). Einen Datenschutzbeauftragten habe ich nicht benannt, weil keine gesetzliche Pflicht besteht.
           </p>
         </article>
 
         <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">3. Kontaktanfragen</h2>
+          <h2 className="text-base font-semibold text-slate-900">2. Hosting und Server-Logfiles</h2>
           <p className="mt-3">
-            Wenn du uns per E-Mail kontaktierst, verarbeite ich deine E-Mail-Adresse, die von dir
-            angegebenen Kontaktdaten und den Inhalt deiner Nachricht, soweit dies zur Bearbeitung
-            deiner Anfrage erforderlich ist. Dasselbe gilt für Angaben, die du über eine der
-            separaten Projektanfragen für Lernende oder Kooperationspartner sendest.
+            Die Website läuft auf meinem Server bei der Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Deutschland. Der Server steht in Nürnberg. Mit Hetzner besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.
           </p>
           <p className="mt-3">
-            Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, soweit es um die Anbahnung oder
-            Bearbeitung einer konkreten Anfrage geht. Im Übrigen erfolgt die Verarbeitung auf
-            Grundlage von Art. 6 Abs. 1 lit. f DSGVO wegen des berechtigten Interesses an einer
-            geordneten Kommunikation.
-          </p>
-        </article>
-
-        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">
-            4. Cookies und Website-Analytics
-          </h2>
-          <p className="mt-3">
-            Für den Quiz-Teaser wird ein technisch notwendiges Cookie gesetzt. Es dient dazu, die
-            Funktion des Quiz-Teasers bereitzustellen und Missbrauch zu begrenzen.
+            Beim Aufruf der Website verarbeitet der Server: IP-Adresse, Datum und Uhrzeit, aufgerufene Seite, Referrer, Browser und Betriebssystem, Statuscode und Datenmenge.
           </p>
           <p className="mt-3">
-            Website-Analytics startet standardmäßig beim Besuch der Website. Wir verwenden die
-            Daten, um Seitenaufrufe, Klicks und Quiz- sowie Anfrageergebnisse zu verstehen.
-            Du kannst die Erfassung jederzeit unter „Analytics-Einstellungen“ im Footer deaktivieren.
-            Eine bereits gespeicherte Ablehnung wird berücksichtigt.
+            Zweck: Auslieferung der Website, Fehlersuche und Schutz vor Angriffen.
           </p>
           <p className="mt-3">
-            Rechtsgrundlage für das technisch notwendige Cookie ist Art. 6 Abs. 1 lit. f DSGVO
-            sowie, soweit anwendbar, § 25 Abs. 2 TDDDG.
+            Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
           </p>
           <p className="mt-3">
-            Wir erfassen bei aktiver Analytics Seitenaufrufe, Seitenwechsel und Klicks auf
-            wichtige Links (etwa Telegram, Amazon und Downloads), sichtbare Angebote sowie Beginn und Ende einer Quizrunde. Dazu verwenden wir zufällige Browser-, Tab-Sitzungs- und
-            Seitenaufruf-Kennungen, Zeitpunkte, bekannte Seitenpfade und die Reihenfolge der
-            Ereignisse. Eine Sitzung gehört zu einem Tab; nach 30 Minuten ohne Aktivität beginnt
-            bei der nächsten Aktion eine neue Sitzung.
-          </p>
-          <p className="mt-3">
-            Wir übermitteln außerdem eine Schätzung der aktiven Zeit, erreichte Scrollschwellen und eine ungefähre Kennzeichnung gelesener Artikel. Bei Anfragen erfassen wir Öffnen, Absenden, feste Fehlercodes und nach erfolgreicher Speicherung eine zufällige Bestätigungskennung. Formularinhalte und die Kennung der gespeicherten Anfrage werden dabei nicht übertragen. Eine Analytics-Störung verhindert das Speichern deiner Anfrage nicht; in der Statistik kann die Bestätigung dann fehlen. Als Herkunft speichern wir nur den externen
-            Hostnamen und bereinigte allgemeine Kampagnenbezeichnungen (UTM). Vollständige URLs,
-            Suchparameter, Formulareingaben, Fehlertexte, Tasten und Mausbewegungen werden nicht
-            als Analytics-Ereignisse gespeichert. IP-Adressen dienen nur kurzzeitig der Begrenzung
-            von Anfragen und werden nicht in den Analytics-Datensätzen gespeichert.
-          </p>
-          <p className="mt-3">
-            Die Verarbeitung erfolgt in unserer eigenen Infrastruktur. Bei deaktivierter Analytics
-            werden keine Analytics-Kennungen angelegt und keine Ereignisse für eine spätere
-            Übermittlung gesammelt. Deine Einstellung wird getrennt im Browser gespeichert. Blockiertes
-            Browserspeichern oder Verbindungsfehler können die Messung verhindern; die Website
-            bleibt nutzbar. Die Statistik bildet nur tatsächlich übermittelte Beobachtungen ab.
+            Speicherdauer: Server-Logfiles werden nach 14 Tagen automatisch gelöscht.
           </p>
         </article>
 
         <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">5. Speicherdauer</h2>
+          <h2 className="text-base font-semibold text-slate-900">3. Statistik mit Umami</h2>
+          <p className="mt-3">
+            Ich nutze Umami. Umami läuft auf meinem eigenen Server bei Hetzner in Nürnberg. Daten gehen nicht an Dritte.
+          </p>
+          <p className="mt-3">
+            Umami setzt keine Cookies und speichert nichts in deinem Browser. Die IP-Adresse wird nicht gespeichert.
+          </p>
+          <p className="mt-3">
+            Erfasst werden: aufgerufene Seite, Referrer, Browser, Betriebssystem, Gerätetyp, Bildschirmgröße, Sprache, ungefähres Land und Region sowie Klicks auf Links zu Telegram, YouTube und Amazon und Ereignisse im Quiz und im Kontaktformular. Inhalte aus dem Formular werden nicht erfasst.
+          </p>
+          <p className="mt-3">
+            Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO. Mein berechtigtes Interesse ist, die Website anhand anonymer Statistiken zu verbessern. Eine Einwilligung nach § 25 TDDDG ist nicht nötig, weil nichts auf deinem Gerät gespeichert oder ausgelesen wird.
+          </p>
+          <p className="mt-3">
+            Speicherdauer: 24 Monate.
+          </p>
+          <p className="mt-3">
+            Frühere Statistik: Bis zur Umstellung im Herbst 2026 habe ich eine eigene Statistik verwendet. Sie ist abgeschaltet. Die Daten werden spätestens bis zum 28.02.2027 gelöscht. Alte Einträge davon in deinem Browser löscht die Website beim nächsten Besuch automatisch.
+          </p>
+        </article>
+
+        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
+          <h2 className="text-base font-semibold text-slate-900">4. Kontaktformular und E-Mail</h2>
+          <p className="mt-3">
+            Im Kontaktformular gibst du Name, Kontaktweg (z. B. E-Mail oder Telegram) und Angaben zu deiner Anfrage ein. Die Angaben werden auf meinem Server bei Hetzner gespeichert. Nur ich habe Zugriff. Sie werden nicht an Dritte weitergegeben.
+          </p>
+          <p className="mt-3">
+            E-Mails empfange ich über Gmail. Anbieter ist die Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Dabei können Daten an die Google LLC in den USA übermittelt werden. Google LLC ist nach dem EU-US Data Privacy Framework zertifiziert (Art. 45 DSGVO). Datenschutz von Google:{" "}<a className="underline underline-offset-2" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>
+          </p>
+          <p className="mt-3">
+            Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO, wenn deine Anfrage auf Unterricht oder eine Kooperation zielt; sonst Art. 6 Abs. 1 lit. f DSGVO.
+          </p>
+          <p className="mt-3">
+            Speicherdauer: Anfragen aus dem Formular werden 6 Monate nach der letzten Bearbeitung automatisch gelöscht, außer eine gesetzliche Pflicht verlangt eine längere Aufbewahrung.
+          </p>
+        </article>
+
+        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
+          <h2 className="text-base font-semibold text-slate-900">5. Externe Links</h2>
+          <p className="mt-3">
+            Die Website enthält Links zu Telegram, YouTube und Amazon. Beim Besuch meiner Website wird von diesen Diensten nichts geladen. Erst wenn du auf einen Link klickst, verlässt du meine Website. Dann gilt der Datenschutz des jeweiligen Anbieters.
+          </p>
+          <p className="mt-3">
+            Telegram: Telegram FZ-LLC, Dubai, Vereinigte Arabische Emirate. Für die VAE gibt es keinen Angemessenheitsbeschluss der EU. Datenschutz:{" "}<a className="underline underline-offset-2" href="https://telegram.org/privacy" target="_blank" rel="noopener noreferrer">https://telegram.org/privacy</a>
+          </p>
+          <p className="mt-3">
+            YouTube: Google Ireland Limited, Dublin. Datenschutz:{" "}<a className="underline underline-offset-2" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>
+          </p>
+          <p className="mt-3">
+            Amazon: Amazon Europe Core S.à r.l., 38 Avenue John F. Kennedy, L-1855 Luxemburg. Es sind keine Affiliate-Links.
+          </p>
+        </article>
+
+        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
+          <h2 className="text-base font-semibold text-slate-900">6. Speicherung im Browser</h2>
+          <p className="mt-3">
+            Die Website setzt keine Cookies zu Werbe- oder Statistikzwecken. Gespeichert wird nur, was das Quiz braucht:
+          </p>
           <ul className="mt-3 list-disc space-y-2 pl-5">
-            <li>
-              Technisch notwendiges Quiz-Teaser-Cookie: bis zu 30 Tage.
-            </li>
-            <li>
-              Analytics-Ereignisse: 90 Tage. Browser-Kennung: ebenfalls 90 Tage. Beim nächsten
-              erfassten Ereignis nach Ablauf dieser Zeit wird sie erneuert. Sitzungsdaten werden
-              im jeweiligen Tab gespeichert. Nicht übermittelte
-              Ereignisse bleiben höchstens fünf Minuten im Arbeitsspeicher der Seite.
-            </li>
-            <li>
-              Kontaktanfragen: 6 Monate nach der letzten Bearbeitung, sofern keine gesetzliche
-              oder sonstige berechtigte Aufbewahrungspflicht eine längere Speicherung erfordert.
-            </li>
-            <li>
-              Betriebsprotokolle dienen dem Betrieb und der Fehleranalyse. Datenbank-Backups
-              werden 14 Tage aufbewahrt.
-            </li>
+            <li>Cookie „quiz_teaser_scope“ (30 Tage): eine zufällige Kennung für das Tageslimit des Quiz. Sie wird an meinen Quiz-Server bei Hetzner in Nürnberg übermittelt.</li>
+            <li>Local Storage „quiz_arena_five_question_progress_v1“: dein Fortschritt im Quiz. Er bleibt nur in deinem Browser, bis du ihn löschst.</li>
           </ul>
-        </article>
-
-        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">
-            6. Empfänger und Verarbeitung durch Dienstleister
-          </h2>
           <p className="mt-3">
-            Empfänger deiner Daten sind in erster Linie der Verantwortliche selbst und die für den
-            Betrieb dieser Website eingesetzten technischen Systeme.
-          </p>
-          <p className="mt-3">
-            Das Hosting erfolgt bei Hetzner Online GmbH in Deutschland. Für die öffentliche
-            Website ist derzeit kein separater externer Backup- oder Monitoring-Dienst
-            dokumentiert.
+            Rechtsgrundlage: § 25 Abs. 2 Nr. 2 TDDDG und Art. 6 Abs. 1 lit. f DSGVO.
           </p>
         </article>
 
         <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">7. Deine Rechte</h2>
+          <h2 className="text-base font-semibold text-slate-900">7. Empfänger</h2>
           <p className="mt-3">
-            Du hast nach Maßgabe der DSGVO insbesondere das Recht auf Auskunft, Berichtigung,
-            Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit sowie Widerspruch gegen
-            Verarbeitungen, die auf Art. 6 Abs. 1 lit. f DSGVO beruhen.
-          </p>
-          <p className="mt-3">
-            Du kannst Website-Analytics jederzeit mit Wirkung für die
-            Zukunft unter „Analytics-Einstellungen“ im Footer jeder öffentlichen Seite
-            deaktivieren. Die Deaktivierung stoppt die weitere Erfassung in den geöffneten Tabs und
-            entfernt die Analytics-Kennungen sowie noch wartende Ereignisse im Browser.
-            Bereits übermittelte Daten werden dadurch nicht automatisch gelöscht; eine Löschung
-            kannst du über die oben genannte Kontaktadresse anfragen. Eine erneute Aktivierung
-            beginnt mit neuen Kennungen ohne Verknüpfung zur vorherigen Sitzung.
+            Empfänger sind Hetzner (Hosting) und Google (E-Mail). Ich verkaufe keine Daten und gebe sie nicht zu Werbezwecken weiter.
           </p>
         </article>
 
         <article className="rounded-xl border border-white/70 bg-white/80 p-5">
-          <h2 className="text-base font-semibold text-slate-900">8. Beschwerderecht</h2>
+          <h2 className="text-base font-semibold text-slate-900">8. Keine automatisierte Entscheidung</h2>
           <p className="mt-3">
-            Du hast das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren, wenn du
-            der Ansicht bist, dass die Verarbeitung deiner personenbezogenen Daten gegen die DSGVO
-            verstößt. Zuständig am Sitz des Verantwortlichen ist insbesondere die Landesbeauftragte
-            für Datenschutz und Informationsfreiheit Nordrhein-Westfalen.
+            Ich nutze keine automatisierte Entscheidungsfindung und kein Profiling nach Art. 22 DSGVO.
+          </p>
+        </article>
+
+        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
+          <h2 className="text-base font-semibold text-slate-900">9. Deine Rechte</h2>
+          <p className="mt-3">
+            Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Schreib mir an{" "}<a className="font-medium text-slate-900 underline underline-offset-2" href={`mailto:${contactEmail}`}>{contactEmail}</a>.
           </p>
           <p className="mt-3">
-            Informationen und Beschwerdemöglichkeiten findest du unter{" "}
-            <a
-              className="underline underline-offset-2"
-              href="https://www.ldi.nrw.de/kontakt/ihre-beschwerde"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              ldi.nrw.de/kontakt/ihre-beschwerde
-            </a>
-            .
+            Du kannst dich bei einer Aufsichtsbehörde beschweren (Art. 77 DSGVO). Zuständig ist die Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestraße 2–4, 40213 Düsseldorf:{" "}<a className="underline underline-offset-2" href="https://www.ldi.nrw.de/kontakt/ihre-beschwerde" target="_blank" rel="noopener noreferrer">https://www.ldi.nrw.de/kontakt/ihre-beschwerde</a>
           </p>
+        </article>
+
+        <article className="rounded-xl border border-white/70 bg-white/80 p-5">
+          <h2 className="text-base font-semibold text-slate-900">10. Widerspruchsrecht nach Art. 21 DSGVO</h2>
+          <blockquote className="mt-3 border-l-4 border-slate-300 pl-4">
+            <p>Wenn ich deine Daten auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO verarbeite, kannst du aus Gründen deiner besonderen Situation jederzeit widersprechen. Dann verarbeite ich deine Daten nicht mehr, außer ich kann zwingende schutzwürdige Gründe nachweisen oder die Verarbeitung dient Rechtsansprüchen. Eine formlose E-Mail an{" "}<a className="font-medium text-slate-900 underline underline-offset-2" href={`mailto:${contactEmail}`}>{contactEmail}</a>{" "}genügt.</p>
+          </blockquote>
         </article>
       </section>
         <PublicLegalFooter />

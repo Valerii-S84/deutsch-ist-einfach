@@ -1,6 +1,5 @@
 "use client";
 
-import { analyticsAttributes } from "@/lib/analytics/elements";
 import { useState } from "react";
 
 import { ContactWizardModal } from "../_components/contact-wizards";
@@ -43,7 +42,6 @@ export function ContactPageActions() {
           <button
             type="button"
             onClick={() => openWizard("student")}
-            {...analyticsAttributes("student_form", "contact")}
             className={`${BUTTON_CLASS} bg-[#FFD166] text-[#07111f] hover:bg-[#ffe099] focus-visible:ring-white`}
           >
             Unverbindliche Lernanfrage starten
@@ -68,7 +66,6 @@ export function ContactPageActions() {
           <button
             type="button"
             onClick={() => openWizard("partner")}
-            {...analyticsAttributes("partner_form", "contact")}
             className={`${BUTTON_CLASS} border border-[#4DE2C6]/30 bg-[#4DE2C6]/10 text-[#B9FFF2] hover:bg-[#4DE2C6]/20 focus-visible:ring-[#B9FFF2]`}
           >
             Kooperationsanfrage starten

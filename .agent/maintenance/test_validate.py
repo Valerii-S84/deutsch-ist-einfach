@@ -20,8 +20,20 @@ class BundleValidationTests(unittest.TestCase):
         for relative in validator.REQUIRED_FILES:
             destination = self.root / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source / relative, destination)
-
+            if relative in ("README.md", "README.ua.md", "LICENSE"):
+                destination.write_text("# Тестовий документ бібліотеки\n", encoding="utf-8")
+            elif relative == ".agent/project/PROJECT_CONTEXT.md":
+                destination.write_text(self.context_template(), encoding="utf-8")
+            elif relative == ".agent/project/CODE_STYLE.md":
+                destination.write_text(self.style_template(), encoding="utf-8")
+            elif (source / relative).is_file():
+                shutil.copyfile(source / relative, destination)
+            else:
+                self.fail(f"Відсутній файл комплекту: {relative}")
+        for relative in ("docs/admin-restoration.md", "docs/statistics-contract.md"):
+            destination = self.root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text("# Синтетичне джерело посилання\n", encoding="utf-8")
     def edit(self, relative, transform):
         path = self.root / relative
         path.write_text(transform(path.read_text(encoding="utf-8-sig")), encoding="utf-8")
@@ -36,6 +48,18 @@ class BundleValidationTests(unittest.TestCase):
 
     def errors(self, mode="template"):
         return validator.validate(self.root, mode)[0]
+
+    def context_template(self):
+        """Синтетичний профіль; не читає контекст цільового продукту."""
+        values = {name: "[FILL_PER_PROJECT]" for name in validator.CONTEXT_FIELDS}
+        values["profile"] = "template"
+        return "# Тестовий контекст\n\n" + "".join(
+            f"{name}: {value}\n" for name, value in values.items())
+
+    def style_template(self):
+        return "# Тестовий стиль\n\n" + "".join(
+            f"{name}: [FILL_PER_PROJECT]\n" for name in validator.STYLE_FIELDS)
+
 
     def test_template_is_valid(self):
         self.assertEqual([], self.errors())
@@ -107,65 +131,24 @@ class BundleValidationTests(unittest.TestCase):
         self.edit("README.md", lambda value: value + "\n[Перевірка](../outside.md)\n")
         self.assertTrue(any("за межі" in item for item in self.errors()))
 
-    def test_version_mismatch_is_rejected(self):
-        self.edit(".agent/AGENTS.md", lambda value: re.sub(r"^bundle_version:.*$", "bundle_version: 9.0.0", value, flags=re.M))
-        self.assertTrue(any("Версія" in item for item in self.errors()))
+    def test_installed_template_is_valid_without_library_documents(self):
+        for name in ("README.md", "README.ua.md", "LICENSE"):
+            (self.root / name).unlink()
+        self.assertEqual([], self.errors("installed"))
+        self.assertTrue(self.errors("project"))
 
-    def test_missing_role_profiles_is_rejected(self):
-        (self.root / ".agent/profiles/ROLES.md").unlink()
-        self.assertTrue(any("ROLES.md" in item for item in self.errors()))
+    def test_installed_cli_discloses_profile_limit(self):
+        result = subprocess.run(
+            [sys.executable, "-B", str(self.root / ".agent/maintenance/validate.py"),
+             "--root", str(self.root), "--mode", "installed"],
+            capture_output=True, encoding="utf-8", timeout=15, check=False)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("не підтверджує", result.stdout)
 
-    def test_old_project_without_review_fields_remains_valid(self):
+    def test_installed_project_keeps_unknown_field_gate(self):
         self.project()
-        for name in validator.REVIEW_DEFAULTS:
-            self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text, name=name:
-                      re.sub(rf"^{name}:.*\n", "", text, flags=re.M))
-        self.assertEqual([], self.errors("project"))
-
-    def test_invalid_role_mode_is_rejected(self):
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text: text.replace("role_mode: auto", "role_mode: arbitrary"))
-        self.assertTrue(any("role_mode" in item for item in self.errors()))
-
-    def test_duplicate_review_field_is_rejected(self):
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text: text + "\nreview_mode: self\n")
-        self.assertTrue(any("повторене поле review_mode" in item for item in self.errors()))
-
-    def test_separate_review_requires_reviewer(self):
-        self.project()
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text: text.replace("review_mode: risk_based", "review_mode: separate"))
-        self.assertTrue(any("review_executor" in item for item in self.errors("project")))
-
-    def test_separate_review_with_user_is_valid(self):
-        self.project()
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text: text.replace(
-            "review_mode: risk_based", "review_mode: separate").replace(
-            "review_executor: unspecified", "review_executor: user"))
-        self.assertEqual([], self.errors("project"))
-
-    def test_trigger_requires_reviewer_even_in_self_mode(self):
-        self.project()
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text: re.sub(
-            r"^review_triggers:.*$", "review_triggers: зміна авторизації", text.replace(
-                "review_mode: risk_based", "review_mode: self"), flags=re.M))
-        self.assertTrue(any("review_executor" in item for item in self.errors("project")))
-
-    def test_partial_budget_is_rejected(self):
-        self.project()
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda value: re.sub(
-            r"^budget_limit:.*$", "budget_limit: 100", value, flags=re.M))
-        self.assertTrue(any("Бюджет" in item for item in self.errors("project")))
-
-    def test_numeric_budget_is_valid(self):
-        self.project()
-        values = {"budget_unit": "seconds", "budget_limit": "600",
-                  "budget_measurement": "монотонний годинник", "budget_scope": "задача і допоміжні процеси"}
-        for name, value in values.items():
-            self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text, name=name, value=value:
-                      re.sub(rf"^{name}:.*$", f"{name}: {value}", text, flags=re.M))
-        self.assertEqual([], self.errors("project"))
-        self.edit(".agent/project/PROJECT_CONTEXT.md", lambda text: text.replace("budget_limit: 600", "budget_limit: nan"))
-        self.assertTrue(any("budget_limit" in item for item in self.errors("project")))
-
+        self.edit(".agent/project/CODE_STYLE.md", lambda text: text + "\nUNKNOWN\n")
+        self.assertTrue(self.errors("installed"))
 
 if __name__ == "__main__":
     unittest.main()

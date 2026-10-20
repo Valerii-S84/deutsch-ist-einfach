@@ -6,10 +6,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ContactPageActions } from "./contact-page-actions";
 
-const trackEventSpy = vi.fn();
+const trackSpy = vi.fn();
 
-vi.mock("@/app/analytics-provider", () => ({
-  usePublicAnalytics: () => ({ trackEvent: trackEventSpy }),
+vi.mock("@/lib/umami", () => ({
+  track: (name: string, data?: Record<string, string | number>) => trackSpy(name, data),
 }));
 
 vi.mock("../_components/contact-wizards", () => ({
@@ -51,7 +51,7 @@ function renderActions() {
 
 afterEach(() => {
   document.body.innerHTML = "";
-  trackEventSpy.mockClear();
+  trackSpy.mockClear();
 });
 
 describe("contact page actions", () => {
@@ -84,7 +84,7 @@ describe("contact page actions", () => {
 
       act(() => studentButton?.click());
       expect(container.querySelector('[data-open-wizard="student"]')).not.toBeNull();
-      expect(trackEventSpy).not.toHaveBeenCalled();
+      expect(trackSpy).not.toHaveBeenCalled();
 
       const closeButton = Array.from(container.querySelectorAll("button")).find((button) =>
         button.textContent?.includes("Testdialog schließen"),
@@ -93,7 +93,7 @@ describe("contact page actions", () => {
       act(() => partnerButton?.click());
 
       expect(container.querySelector('[data-open-wizard="partner"]')).not.toBeNull();
-      expect(trackEventSpy).not.toHaveBeenCalled();
+      expect(trackSpy).not.toHaveBeenCalled();
     } finally {
       cleanup();
     }

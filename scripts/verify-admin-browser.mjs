@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "../.verification/browser/node_modules/playwright/index.mjs";
 const production = process.argv.includes("--production");
 const origin = process.argv.includes("--v1") ? "https://localhost:44453" : production ? "https://localhost:44443" : "http://localhost:43818";
-const output = process.argv.includes("--v1") ? ".verification/website-analytics/v1/quiz-browser" : production ? ".verification/production-browser-evidence" : ".verification/browser-evidence";
+const output = production ? ".verification/production-browser-evidence" : ".verification/browser-evidence";
 mkdirSync(output, { recursive: true });
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 const context = await browser.newContext({ ignoreHTTPSErrors: production, viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
@@ -37,16 +37,13 @@ let promoId;
 try {
   await page.goto(origin + "/admin/login");
   await step("unauthenticated server RBAC", async () => {
-    for (const path of ["/api/admin/quiz-arena/users", "/api/admin/contact-requests", "/api/admin/website-analytics/overview"]) assert.equal((await api(path)).status, 401);
+    for (const path of ["/api/admin/quiz-arena/users", "/api/admin/contact-requests"]) assert.equal((await api(path)).status, 401);
   });
   await step("site login in browser", async () => {
     await page.locator("#admin-email").fill("site@example.test");
     await page.locator("#admin-password").fill("synthetic-site-password");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await page.waitForURL("**/admin/products");
-  });
-  await step("independent site DB analytics", async () => {
-    const response = await api("/api/admin/website-analytics/overview?days=7"); assert.equal(response.status, 200);
   });
   await step("backend login and real TOTP in browser", async () => {
     await page.goto(origin + "/admin/quiz-arena/login");

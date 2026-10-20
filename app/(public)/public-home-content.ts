@@ -1,8 +1,6 @@
 export const BOT_LOGO_PATH = "/logo/bot-logo.jpg";
 export const CHANNEL_LOGO_PATH = "/logo/channel-logo.jpg";
 export const DEUTSCH_TRAINER_LOGO_PATH = "/logo/deutsch-trainer-logo.png";
-export const WORKLOG_LOGO_PATH = "/products/worklog/logo.png";
-export const WORKLOG_DOWNLOAD_PATH = "/downloads/worklog/direct-hoofdrapport.apk";
 
 export const GLASS_CARD_CLASS =
   "rounded-2xl border border-white/10 bg-white/[0.07] shadow-[0_18px_54px_rgba(0,0,0,0.26)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.09] sm:rounded-3xl sm:shadow-[0_24px_70px_rgba(0,0,0,0.28)]";
